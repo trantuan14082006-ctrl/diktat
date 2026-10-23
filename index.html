@@ -119,6 +119,13 @@ html{scroll-behavior:smooth}
 .fb-btn:hover{border-color:var(--yl);transform:translateY(-1px)}.fb-btn:active{transform:scale(.96)}
 .fb-st{font-size:12px;color:var(--mu);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:700px){.fb-bar{margin-left:0}.fb-st{max-width:120px}}
+.fast{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 4px;padding:12px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--g)}
+.fast .ft{min-width:0}.fast b{display:block;font-size:15px}.fast small{display:block;color:var(--mu);font-size:12.5px;line-height:1.4;margin-top:2px}
+.fast small.warn{color:var(--bad)}
+.fast2{margin:6px 0 4px}.fast2 label{display:block;font-size:13px;color:var(--mu);margin-bottom:4px}.fast2 small{display:block;color:var(--mu);font-size:12.5px;margin-top:4px}
+.ios{position:relative;flex:none;width:52px;height:32px;border:0;border-radius:16px;background:#c9ccd1;cursor:pointer;padding:0;transition:background .2s}
+.ios::after{content:"";position:absolute;top:2px;left:2px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.3);transition:transform .2s}
+.ios.on{background:#ff9500}.ios.on::after{transform:translateX(20px)}
 #fbGate{position:fixed;inset:0;z-index:99999;display:none;overflow:auto;color:#14181f;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
 background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 #fbGate.on{display:flex}
@@ -223,6 +230,8 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
   <div id="multi" class="hide"></div>
   <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input type="checkbox" id="wchk" checked> Dùng Whisper (nhận diện giọng nói) để tách câu chính xác hơn</label>
   <label>Mô hình Whisper – lần đầu phải tải về, cần mạng</label><select id="wm" class="wmsel"><option value="tiny">tiny (nhẹ nhất – cho máy yếu)</option><option value="base">base (cân bằng – máy trung bình)</option><option value="small">small (chính xác nhất – nên dùng khi có GPU)</option></select>
+  <div class="fast"><div class="ft"><b>⚡ Chế độ nhanh (Whisper nhiều luồng)</b><small id="fastSt"></small></div><button type="button" class="ios" id="fastTg" role="switch" aria-checked="false" aria-label="Chế độ nhanh"></button></div>
+  <div class="fast2"><label for="fastN">Số luồng khi bật chế độ nhanh</label><select id="fastN" class="wmsel"><option value="auto">Tự động (an toàn cho mọi máy – tối đa 4)</option><option value="6">6 luồng</option><option value="8">8 luồng</option><option value="max">Tối đa của máy (số nhân − 1)</option></select><small id="fastN2"></small></div>
   <div class="row"><button class="sbtn" id="wtx">✍ Whisper tự viết script</button><button class="sbtn p" id="save">Lưu & tự tách câu</button><button class="sbtn p" id="tapadd">🎯 Bấm Space đánh dấu & lưu</button><span class="mu" id="msg"></span><button class="sbtn hide" id="wskip1">Bỏ qua Whisper</button></div>
  </div>
 </div>
@@ -243,7 +252,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 <script type="text/plain" id="wsrc">
 import {pipeline,env} from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 /* đa luồng cho CPU (wasm): chỉ có tác dụng khi trang crossOriginIsolated (COOP/COEP); không thì tự chạy 1 luồng. Chừa 1 nhân cho UI */
-try{if(self.crossOriginIsolated)env.backends.onnx.wasm.numThreads=Math.max(1,Math.min(4,(self.navigator.hardwareConcurrency||4)-1))}catch(e){}
+try{if(self.crossOriginIsolated){const hc=self.navigator.hardwareConcurrency||4,auto=Math.max(1,Math.min(4,hc-1)),w=+self.__WT;env.backends.onnx.wasm.numThreads=w>0?Math.max(1,Math.min(w,hc)):auto}}catch(e){}
 let asr=null,curModel='',curDev='';
 const send=m=>self.postMessage(m);
 async function load(model,device){
@@ -846,7 +855,7 @@ function buildSegs(parts,dur,eng,extra){
 /* Whisper chạy trong Web Worker => trang không bị đứng hình. Có WebGPU thì dùng GPU (nhanh), không thì CPU (wasm, bản q8 nhẹ) */
 let wk=null;
 function getWorker(){
-  if(!wk)wk=new Worker(URL.createObjectURL(new Blob([$('wsrc').textContent],{type:'text/javascript'})),{type:'module'});
+  if(!wk)wk=new Worker(URL.createObjectURL(new Blob(['self.__WT='+wThreadsPick()+';\n'+$('wsrc').textContent],{type:'text/javascript'})),{type:'module'});
   return wk}
 function killWorker(){if(wk){wk.terminate();wk=null}}
 /* nút "Bỏ qua Whisper": dừng worker ngay, chuyển sang cách dò khoảng lặng (nhẹ, không cần model) */
@@ -1171,6 +1180,47 @@ $('rback').onclick=()=>show('vMode');
 /* ===== Firebase Cloud Sync ===== */
 let fbUser=null,fbSyncing=false;
 function fbOk(){return typeof firebase!=='undefined'&&firebase.apps&&firebase.apps.length>0}
+/* ===== Chế độ nhanh (coi): bật = Whisper nhiều luồng; luôn tắt khi đăng nhập ===== */
+const lsg=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lss=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function fastUI(){
+  const tg=$('fastTg'),st=$('fastSt');if(!tg)return;
+  const want=lsg('coiWant')==='1',iso=!!self.crossOriginIsolated;
+  tg.classList.toggle('on',want);tg.setAttribute('aria-checked',want?'true':'false');
+  st.classList.remove('warn');
+  if(lsg('coiFailed')==='1'){st.classList.add('warn');st.textContent='Chế độ nhanh làm mất đăng nhập trên máy này nên đã tự tắt. Whisper đang chạy 1 luồng.'}
+  else if(want&&iso)st.textContent='Đang BẬT – Whisper chạy tối đa '+Math.max(1,Math.min(4,(navigator.hardwareConcurrency||4)-1))+' luồng. Nếu bị đăng xuất, web tự tắt chế độ này để bạn đăng nhập lại.'
+  else if(want)st.textContent='Đang bật… (trang sẽ tự tải lại 1 lần để có hiệu lực)'
+  else st.textContent='Đang TẮT – Whisper chạy 1 luồng. Bật lên sẽ tải lại trang và chạy nhanh hơn.'
+}
+function fastSet(on){
+  lss('coiWant',on?'1':'0');lss('coiOn',on?'1':'0');lss('coiFails','0');
+  if(on)lss('coiFailed','0');
+  location.reload()
+}
+function wThreadsPick(){const v=lsg('wThreads'),hc=navigator.hardwareConcurrency||4;
+  if(v==='max')return Math.max(1,hc-1);const n=+v;return n>0?Math.min(n,hc):0}
+function fastNUI(){
+  const sel=$('fastN'),sm=$('fastN2');if(!sel)return;
+  const hc=navigator.hardwareConcurrency||'?',v=lsg('wThreads')||'auto';
+  sel.value=[...sel.options].some(o=>o.value===v)?v:'auto';
+  sm.textContent='Máy này báo có '+hc+' nhân CPU. Mặc định an toàn cho người khác; máy khỏe thì chọn cao hơn (chỉ lưu cho trình duyệt này, có hiệu lực sau khi tải lại trang).'
+}
+document.addEventListener('DOMContentLoaded',()=>{const tg=$('fastTg');if(tg)tg.onclick=()=>fastSet(lsg('coiWant')!=='1');
+  const sel=$('fastN');if(sel)sel.onchange=()=>{lss('wThreads',sel.value);$('fastN2').textContent='Đã lưu. Bấm F5 (tải lại trang) để áp dụng.'};
+  fastUI();fastNUI()});
+/* lúc chưa đăng nhập: tắt coi tạm thời (cửa sổ đăng nhập Google không chạy được khi coi bật) */
+function fastGuardNoUser(){
+  if(lsg('coiOn')!=='1')return false;
+  const n=(+lsg('coiFails')||0)+1;lss('coiFails',String(n));
+  if(n>=2){lss('coiWant','0');lss('coiFailed','1')}   /* bị mất đăng nhập 2 lần liền → bỏ hẳn chế độ nhanh */
+  lss('coiOn','0');location.reload();return true
+}
+/* đã đăng nhập: nếu người dùng muốn chế độ nhanh thì bật lại */
+function fastAfterLogin(){
+  if(lsg('coiWant')==='1'&&lsg('coiOn')!=='1'){lss('coiOn','1');location.reload();return true}
+  if(lsg('coiOn')==='1'&&self.crossOriginIsolated)lss('coiFails','0');
+  return false
+}
 /* ===== Cổng đăng nhập: phải đăng nhập mới dùng được web ===== */
 function gate(msg,btn){
   const g=$('fbGate'),m=$('fbGateMsg'),bt=$('fbGateBtn');
@@ -1202,6 +1252,7 @@ function fbInit(){
     console.log('[auth]',u?('đã đăng nhập: '+(u.email||u.uid)):'chưa đăng nhập');
     fbUser=u;fbAuthUI();
     if(u&&db){try{await fbSync();render()}catch(e){console.error('sync',e)}}
+    if(u)fastAfterLogin();
   },e=>{console.warn('authState',e.code,e.message);gate('Lỗi kiểm tra đăng nhập.',{text:'🔄 Tải lại',fn:()=>location.reload()})});
 }
 function fbAuthUI(){
@@ -1214,6 +1265,7 @@ function fbAuthUI(){
     sb.classList.remove('hide');sb.onclick=()=>{if(!fbSyncing)fbSync().then(()=>render())};
     st.textContent='☁ '+(fbUser.displayName||fbUser.email||'');st.classList.remove('hide')
   }else{
+    if(fastGuardNoUser())return;
     gate('',{text:'Đăng nhập bằng Google',g:true,fn:fbLogin});
     b.textContent='☁ Đăng nhập';b.onclick=fbLogin;
     sb.classList.add('hide');st.textContent='';st.classList.add('hide')
