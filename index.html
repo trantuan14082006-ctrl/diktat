@@ -1145,7 +1145,14 @@ function fbInit(){
   if(typeof firebase==='undefined')return;
   /* ★★★ THAY config Firebase của bạn vào đây ★★★
      Lấy từ: Firebase Console → Project Settings → General → Your apps → Web app → SDK setup */
-  const cfg={apiKey:"",authDomain:"",projectId:"",storageBucket:"",messagingSenderId:"",appId:""};
+const cfg={
+  apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",           // ← đã thay của bạn
+  authDomain:"diktat-dashboard.firebaseapp.com",  // ← đã thay của bạn
+  projectId:"diktat-dashboard",              // ← đã thay của bạn
+  storageBucket:"diktat-dashboard.firebasestorage.app",   // ← đã thay của bạn
+  messagingSenderId:"579828825281",   // ← đã thay của bạn
+  appId:"1:579828825281:web:6e764c41808673a7642840"   // ← đã thay của bạn
+};
   if(!cfg.apiKey)return;
   try{firebase.initializeApp(cfg)}catch(e){console.warn('fb init',e);return}
   firebase.auth().getRedirectResult().catch(()=>{});
