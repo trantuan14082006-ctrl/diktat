@@ -11,6 +11,8 @@ if (typeof window === 'undefined') {
   self.addEventListener('fetch', e => {
     const r = e.request;
     if (r.cache === 'only-if-cached' && r.mode !== 'same-origin') return;
+    /* request CORS sang domain khác (Firebase/Google API, Hugging Face…): để trình duyệt tự xử lý, không can thiệp */
+    try { if (new URL(r.url).origin !== self.location.origin && r.mode === 'cors') return; } catch (_) {}
     e.respondWith(
       fetch(r).then(res => {
         if (res.status === 0) return res;            /* phản hồi opaque: để nguyên */

@@ -6,7 +6,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js" crossorigin="anonymous"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>/* áp dụng giao diện tối ngay từ đầu (trước khi vẽ trang) để không bị nháy màu sáng */
 try{if(localStorage.getItem('diktatTheme')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}</script>
@@ -1145,21 +1144,17 @@ function fbInit(){
   if(typeof firebase==='undefined')return;
   /* ★★★ THAY config Firebase của bạn vào đây ★★★
      Lấy từ: Firebase Console → Project Settings → General → Your apps → Web app → SDK setup */
-const cfg={
-  apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",           // ← đã thay của bạn
-  authDomain:"diktat-dashboard.firebaseapp.com",  // ← đã thay của bạn
-  projectId:"diktat-dashboard",              // ← đã thay của bạn
-  storageBucket:"diktat-dashboard.firebasestorage.app",   // ← đã thay của bạn
-  messagingSenderId:"579828825281",   // ← đã thay của bạn
-  appId:"1:579828825281:web:6e764c41808673a7642840"   // ← đã thay của bạn
-};
+  const cfg={apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",authDomain:"diktat-dashboard.firebaseapp.com",projectId:"diktat-dashboard",storageBucket:"diktat-dashboard.firebasestorage.app",messagingSenderId:"579828825281",appId:"1:579828825281:web:6e764c41808673a7642840"};
   if(!cfg.apiKey)return;
   try{firebase.initializeApp(cfg)}catch(e){console.warn('fb init',e);return}
-  firebase.auth().getRedirectResult().catch(()=>{});
+  /* giữ đăng nhập sau khi tải lại trang */
+  firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>console.warn('persist',e.code,e.message));
+  firebase.auth().getRedirectResult().catch(e=>console.warn('redirect',e.code,e.message));
   firebase.auth().onAuthStateChanged(async u=>{
+    console.log('[auth]',u?('đã đăng nhập: '+(u.email||u.uid)):'chưa đăng nhập');
     fbUser=u;fbAuthUI();
     if(u&&db){try{await fbSync();render()}catch(e){console.error('sync',e)}}
-  });
+  },e=>console.warn('authState',e.code,e.message));
 }
 function fbAuthUI(){
   const b=$('fbAuth'),sb=$('fbSyncBtn'),st=$('fbStatus');
@@ -1180,22 +1175,33 @@ function fbCol(){return firebase.firestore().collection('users').doc(fbUser.uid)
 /* Firestore không chấp nhận mảng lồng mảng → chuyển segs [[s,e],...] ↔ [{s,e},...] */
 function segsToFb(sg){return Array.isArray(sg)?sg.map(p=>Array.isArray(p)?{s:p[0],e:p[1]}:p):sg}
 function segsFromFb(sg){return Array.isArray(sg)?sg.map(p=>Array.isArray(p)?p:[p.s,p.e]):sg}
+/* Âm thanh lưu trong Firestore (miễn phí, không cần Storage): cắt thành các mảnh ~700KB */
+const FB_CH=700*1024;
+function fbAud(){return firebase.firestore().collection('users').doc(fbUser.uid).collection('audioChunks')}
+async function fbDelAudio(id){
+  const q=await fbAud().where('lid','==',String(id)).get();
+  for(let i=0;i<q.docs.length;i+=400){const b=firebase.firestore().batch();q.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit()}
+}
+async function fbPutAudio(id,au){
+  await fbDelAudio(id);
+  const buf=new Uint8Array(await au.arrayBuffer()),ext=aext(au),n=Math.max(1,Math.ceil(buf.length/FB_CH));
+  for(let i=0;i<n;i++){
+    await fbAud().doc(id+'_'+String(i).padStart(4,'0')).set({lid:String(id),n:i,total:n,ext:ext,type:au.type||'',
+      data:firebase.firestore.Blob.fromUint8Array(buf.subarray(i*FB_CH,(i+1)*FB_CH))})
+  }
+}
 async function fbPut(m,au){
   if(!fbUser||!fbOk())return;
   const doc={...m};delete doc.audio;
   Object.keys(doc).forEach(k=>{if(doc[k]===undefined)delete doc[k]});
   if(doc.segs)doc.segs=segsToFb(doc.segs);
   await fbCol().doc(String(doc.id)).set(doc);
-  if(au instanceof Blob){
-    const ref=firebase.storage().ref('users/'+fbUser.uid+'/audio/'+doc.id+'.'+aext(au));
-    await ref.put(au,{contentType:au.type||'audio/mpeg'})
-  }
+  if(au instanceof Blob)await fbPutAudio(doc.id,au)
 }
 async function fbDel(id){
   if(!fbUser||!fbOk())return;
   await fbCol().doc(String(id)).delete();
-  try{const ls=await firebase.storage().ref('users/'+fbUser.uid+'/audio').listAll();
-    const f=ls.items.find(i=>i.name.startsWith(id+'.'));if(f)await f.delete()}catch(e){}
+  try{await fbDelAudio(id)}catch(e){console.warn('fb del audio',e)}
 }
 async function fbAllItems(){
   if(!fbUser||!fbOk())return[];
@@ -1204,11 +1210,11 @@ async function fbAllItems(){
 }
 async function fbGetAudio(id){
   if(!fbUser||!fbOk())return null;
-  try{const ls=await firebase.storage().ref('users/'+fbUser.uid+'/audio').listAll();
-    const f=ls.items.find(i=>i.name.startsWith(id+'.'));if(!f)return null;
-    const u=await f.getDownloadURL(),r=await fetch(u),b=await r.blob();
-    const ext=f.name.split('.').pop(),mime=EXTM[ext]||'audio/mpeg';
-    return new Blob([b],{type:mime})}catch(e){console.warn('fb audio',e);return null}
+  try{const q=await fbAud().where('lid','==',String(id)).get();if(q.empty)return null;
+    const ds=q.docs.map(d=>d.data()).sort((x,y)=>x.n-y.n);
+    if(ds.length!==ds[0].total){console.warn('fb audio thiếu mảnh',id);return null}
+    const mime=ds[0].type||EXTM[ds[0].ext]||'audio/mpeg';
+    return new Blob(ds.map(d=>d.data.toUint8Array()),{type:mime})}catch(e){console.warn('fb audio',e);return null}
 }
 async function fbSync(){
   if(!fbUser||!fbOk()||fbSyncing||!db)return;
