@@ -285,7 +285,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
   <div class="cnt" id="cnt"></div><div class="mu" id="lmsg" style="margin:4px 0 8px;min-height:20px"></div>
   <div class="btns"><button class="btn b1" id="chk">Prüfen</button><button class="btn b2" id="skip">Weiter</button></div>
   <div class="tools"><button class="sm" data-c="ä">ä</button><button class="sm" data-c="ö">ö</button><button class="sm" data-c="ü">ü</button><button class="sm" data-c="ß">ß</button><button class="sm" data-c="Ä">Ä</button><button class="sm" data-c="Ö">Ö</button><button class="sm" data-c="Ü">Ü</button><br>
-  <button class="sm" id="relisten">🔊 Nghe lại</button><button class="sm" id="prev">← Quay lại</button><button class="sm" id="reveal">Hiện đáp án</button><button class="sm" id="cs">Phân biệt hoa/thường: không</button><button class="sm on" id="pn">Bỏ qua dấu câu: có</button>
+  <button class="sm" id="relisten">🔊 Nghe lại</button><button class="sm" id="cs">Phân biệt hoa/thường: không</button><button class="sm on" id="pn">Bỏ qua dấu câu: có</button>
   <div class="mu">Enter = kiểm tra · Ctrl = nghe lại câu</div></div>
  </div>
  <div id="pdone" class="hide"><div class="big" id="sc"></div><p class="mu" id="scd">Sätze beim ersten Versuch richtig.</p><button class="btn b2" id="again">Nochmal</button></div>
@@ -396,6 +396,7 @@ self.onmessage=e=>{chain=chain.then(()=>handle(e.data))};
 </div>
 <script>
 const $=id=>document.getElementById(id);
+let navPending=false;try{const _n=JSON.parse(localStorage.getItem('diktatNav')||'null');navPending=!!(_n&&_n.v&&_n.v!=='vCourses')}catch(e){}
 let mem=[],db=null,cur=null,url=null,ctx=null,lines=[],trs=[],segs=[],idx=0,tries=0,good=0,timer=null,rate=1,muted=false,showTr=false,ridx=-1,csOn=false,pnOn=true;
 const A=new Audio(),R=new Audio();
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1264,8 +1265,7 @@ function clearWrong(){if(!stale||force)return;setStale(false);const ta=$('ans');
 $('ans').addEventListener('click',clearWrong);$('ans').addEventListener('focus',clearWrong);
 $('ans').addEventListener('scroll',()=>{$('bd').scrollTop=$('ans').scrollTop});
 document.addEventListener('keydown',e=>{if(e.key==='Control'&&!e.repeat&&!$('vType').classList.contains('hide')&&idx<lines.length){e.preventDefault();replay()}});
-$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};$('relisten').onclick=()=>{replay();$('ans').focus()};$('prev').onclick=()=>{if(idx>0)go(idx-1)};
-$('reveal').onclick=()=>{if(!listenOk())return;tries=2;greenTok=[];setStale(false);force='no';$('ans').value=lines[idx];paint();$('ans').focus()};
+$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};$('relisten').onclick=()=>{replay();$('ans').focus()};
 $('cs').onclick=e=>{csOn=!csOn;e.target.classList.toggle('on',csOn);e.target.textContent='Phân biệt hoa/thường: '+(csOn?'có':'không');paint()};
 $('pn').onclick=e=>{pnOn=!pnOn;e.target.classList.toggle('on',pnOn);e.target.textContent='Bỏ qua dấu câu: '+(pnOn?'có':'không');paint()};
 $('again').onclick=startPractice;$('pback').onclick=()=>show('vMode');
@@ -1423,7 +1423,7 @@ function wireLogin(){
   [$('fbUser'),$('fbPass')].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fbLoginPwd()}}));
   $('fbEye').onclick=()=>{const p=$('fbPass');p.type=p.type==='password'?'text':'password'}
 }
-function gateOff(){$('fbGate').classList.remove('on');$('fbLoad').classList.remove('on')}
+function gateOff(){$('fbGate').classList.remove('on');if(!navPending)$('fbLoad').classList.remove('on')}
 function fbLogin(){
   const p=new firebase.auth.GoogleAuthProvider();
   firebase.auth().signInWithPopup(p).catch(e=>{
@@ -1436,7 +1436,7 @@ function fbLogin(){
 function fbInit(){
   wireLogin();
   $('fbLoad').classList.add('on');
-  setTimeout(()=>{if($('fbLoad').classList.contains('on'))gate('Việc kiểm tra đăng nhập quá lâu. Hãy kiểm tra kết nối rồi thử lại.',{text:'Tải lại',fn:()=>location.reload()})},12000);
+  setTimeout(()=>{if($('fbLoad').classList.contains('on')&&!navPending)gate('Việc kiểm tra đăng nhập quá lâu. Hãy kiểm tra kết nối rồi thử lại.',{text:'Tải lại',fn:()=>location.reload()})},12000);
   if(typeof firebase==='undefined'){gate('Không tải được Firebase. Hãy kiểm tra kết nối rồi tải lại trang.',{text:'🔄 Tải lại',fn:()=>location.reload()});return}
   /* ★★★ THAY config Firebase của bạn vào đây ★★★
      Lấy từ: Firebase Console → Project Settings → General → Your apps → Web app → SDK setup */
@@ -1615,7 +1615,8 @@ async function navRestore(){
         else if(v==='vRead'){await ensureSegs();startRead();drawR(st.i||0)}
         else show('vMode')}}}
   }catch(e){console.warn('navRestore',e)}
-  navBusy=false;navDone=true;navSave()}
+  navBusy=false;navDone=true;navPending=false;$('fbLoad').classList.remove('on');navSave()}
+setTimeout(()=>{if(navPending){navPending=false;if(!navDone)navDone=true;$('fbLoad').classList.remove('on')}},10000);
 openDB().then(d=>{db=d;render();fbInit()});
 
 (function(){const tb=document.getElementById('skTab');if(!tb)return;
