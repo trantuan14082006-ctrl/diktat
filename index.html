@@ -528,7 +528,7 @@ let fromPop=false,progNav=false;
 try{if(!(history.state&&history.state.in>0))history.replaceState({in:0},'')}catch(e){}   /* tải lại trang: giữ nguyên cấp lịch sử cũ để nút Lùi/Tiến không bị lặp */
 window.addEventListener('popstate',()=>{if(progNav){progNav=false;return}const c=(history.state&&history.state.in)||0;fromPop=true;
   try{if(c===0)show('vCourses');
-  else if(c===1)show('vHome');            /* không render lại: giữ nguyên nhóm/bài đang chọn */
+  else if(c===1)backToList();            /* về danh sách: nhóm sách vẫn mở, bỏ chọn nhóm nhỏ (lektion) */
   else if(c===2)show(cur?'vMode':'vHome');
   else if(cur){if(lastL3==='vRead')startRead();else if(lastL3==='vEdit')openEditor();else startPractice()}
   else show('vHome')}catch(e){console.warn('popstate',e)}
@@ -706,7 +706,8 @@ const head=()=>(cur.book?cur.book+' - ':'')+cur.title;
 async function ensureSegs(){const n=getLines(cur.script).length;if(!cur.segs||cur.segs.length!==n){cur.segs=await detect(cur.audio,n,getLines(cur.script));await put(cur)}}
 document.querySelector('.col .mode').parentNode.onclick=async e=>{
   const m=e.target.dataset.m;if(!m)return;await ensureSegs();m==='type'?startPractice():startRead()};
-$('mback').onclick=()=>show('vHome');
+function backToList(){for(const k in subSel)delete subSel[k];subOff.clear();render();show('vHome')}
+$('mback').onclick=backToList;
 $('mdel').onclick=async()=>{if(confirm('Xoá bài này?')){await del(cur.id);await render();show('vHome')}};
 $('medit').onclick=async()=>{await ensureSegs();openEditor()};
 let pend=[];
