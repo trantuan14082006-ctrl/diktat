@@ -364,7 +364,7 @@ STUDENTENTEXT>>>
 
 ${rubric}
 
-Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng tiếng Đức) dưới dạng JSON đúng schema sau:
+NGÔN NGỮ TRẢ LỜI (BẮT BUỘC): học viên là người Việt nên trường "kommentar" PHẢI viết hoàn toàn bằng TIẾNG VIỆT (chỉ được trích các từ/câu tiếng Đức ngắn để làm ví dụ). Tuyệt đối KHÔNG viết "kommentar" bằng tiếng Đức. Các trường "register_text", "wortschatz_text", "strukturen_text", "fehler" cũng bằng tiếng Việt. Chỉ "korrektur" và "mustertexte" bằng tiếng Đức. Trả lời dưới dạng JSON đúng schema sau:
 {
   "teilnoten": {
     "inhalt": <số, 0 đến mức tối đa của tiêu chí>,
@@ -377,7 +377,7 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
     "fehler": "<Ít lỗi / Nhiều lỗi nhưng hiểu được / Nhiều lỗi, ảnh hưởng đến sự hiểu>"
   },
   "korrektur": "<bài đã sửa lỗi bằng tiếng Đức, in đậm chỗ sửa bằng **…**>",
-  "kommentar": "<nhận xét chi tiết tiếng Việt: điểm tốt, lỗi cụ thể (ngữ pháp, từ vựng, chính tả), gợi ý cải thiện, dùng ví dụ từ bài>",
+  "kommentar": "<VIẾT BẰNG TIẾNG VIỆT, không dùng tiếng Đức. Nhận xét chi tiết: điểm tốt, lỗi cụ thể (ngữ pháp, từ vựng, chính tả), gợi ý cải thiện, dùng ví dụ từ bài>",
   "mustertexte": ["<bài mẫu 1, ~${curTask.words} từ>","<bài mẫu 2, ~${curTask.words} từ>"]
 }`;
 
