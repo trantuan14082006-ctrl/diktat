@@ -121,13 +121,14 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
 <main>
   <h1>✍️ Schreiben (Viết)</h1>
   <p class="sub">Luyện viết tiếng Đức A1 – Gemini AI chấm bài theo tiêu chí ĐHNN</p>
+  <p class="sub" style="margin-top:-18px;font-size:13px"><a href="#" id="keyLink" style="color:var(--mu);display:none">🔑 Đổi API key</a></p>
 
   <div class="card" id="loginNote" style="display:none"><b>Bạn chưa đăng nhập.</b> Hãy <a href="index.html" style="color:var(--yl)">đăng nhập ở Trang chủ</a> rồi quay lại trang này để chấm bài.</div>
 
   <!-- API Key -->
   <div class="card" id="keyCard">
     <h3>🔑 Gemini API Key</h3>
-    <p style="font-size:14px;color:var(--mu);margin:0 0 10px">Key được lưu trên trình duyệt của bạn, không gửi đi đâu ngoài Google AI.</p>
+    <p style="font-size:14px;color:var(--mu);margin:0 0 10px">Key được lưu trên trình duyệt của bạn, không gửi đi đâu ngoài Google AI.<br>Lấy key miễn phí: vào <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--yl)">aistudio.google.com/apikey</a>, đăng nhập Gmail → <b>Create API key</b> → copy rồi dán vào ô bên dưới.</p>
     <div class="key-bar">
       <input type="password" id="apiKey" placeholder="Dán API key vào đây…" autocomplete="off">
       <button class="btn btn-p" id="saveKey">Lưu</button>
@@ -184,12 +185,12 @@ themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀️':'�
 let toastT;function toast(m,ms){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms||2500)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* Đổi model Gemini ở đây */
-const GEMINI_MODEL='gemini-3.6-flash';
+const GEMINI_MODEL='gemini-3.1-flash-lite';
 /* Tắt "thinking" ở model flash: token suy nghĩ tính vào maxOutputTokens, dễ làm JSON bị cắt */
 const GEN_CONFIG={temperature:0.2,maxOutputTokens:8192,responseMimeType:'application/json',...(/gemini-2\.5-flash/.test(GEMINI_MODEL)?{thinkingConfig:{thinkingBudget:0}}:{})};
 /* Dán địa chỉ Cloudflare Worker vào đây (vd 'https://ten.ban.workers.dev').
    Có địa chỉ => học viên chỉ cần đăng nhập, không phải nhập key. Để '' => mỗi người tự nhập key như cũ. */
-const PROXY_URL='https://diktat-grader.trantuan14082006.workers.dev';
+const PROXY_URL='';
 let fbUser=null;
 if(PROXY_URL){
   $('keyCard').style.display='none';
@@ -201,9 +202,16 @@ if(PROXY_URL){
 
 /* ===== API Key ===== */
 function getKey(){if(PROXY_URL)return fbUser?'proxy':'';try{return localStorage.getItem('geminiKey')||''}catch(e){return ''}}
-function checkKey(){const k=getKey();if(k){$('apiKey').value='••••••••••••';$('keyOk').style.display='block';$('keyOk').textContent='✓ Đã lưu API key'}return !!k}
+function showKeyCard(on){if(PROXY_URL)return;$('keyCard').style.display=on?'':'none';$('keyLink').style.display=on?'none':'inline'}
+function checkKey(){const k=getKey();
+  if(k){$('apiKey').value='••••••••••••';$('keyOk').style.display='block';$('keyOk').textContent='✓ Đã lưu API key'}
+  else{$('apiKey').value='';$('keyOk').style.display='none'}
+  showKeyCard(!k);   /* có key rồi thì ẩn ô nhập; chưa có hoặc key bị từ chối thì hiện lại */
+  return !!k}
+$('keyLink').onclick=e=>{e.preventDefault();showKeyCard(true);$('apiKey').value='';$('apiKey').focus()};
 $('saveKey').onclick=()=>{const v=$('apiKey').value.trim();if(!v||v==='••••••••••••'){toast('Hãy dán API key vào');return}try{localStorage.setItem('geminiKey',v)}catch(e){}checkKey();updateSubmit();toast('Đã lưu API key ✓')};
 checkKey();
+$('apiKey').addEventListener('focus',function(){if(this.value==='••••••••••••')this.value=''});   /* bấm vào ô để nhập key mới */
 
 /* ===== Đề bài ===== */
 const TASKS=[
@@ -396,6 +404,12 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
       break;
     }
     if(!res.ok){
+      if(!PROXY_URL&&(res.status===401||res.status===403||/API key not valid|API_KEY_INVALID|API key expired|PERMISSION_DENIED/i.test(lastErr))){
+        try{localStorage.removeItem('geminiKey')}catch(_){}
+        checkKey();   /* key đã xoá => ô nhập hiện lại */
+        $('keyCard').scrollIntoView({behavior:'smooth',block:'center'});
+        throw new Error('API key không hợp lệ hoặc không dùng được. Hãy nhập lại key.');
+      }
       let msg=lastErr.slice(0,300);
       try{const j=JSON.parse(lastErr);if(j.error)msg=typeof j.error==='string'?j.error:(j.error.message||msg)}catch(_){}
       throw new Error(`Lỗi ${res.status}: ${msg}`);
