@@ -99,6 +99,8 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
 .vin{animation:vin .35s cubic-bezier(.2,.7,.2,1) both}
 @media(prefers-reduced-motion:reduce){.vin{animation:none}*{transition:none!important}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -116,6 +118,8 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
 <main>
   <h1>✍️ Schreiben (Viết)</h1>
   <p class="sub">Luyện viết tiếng Đức A1 – Gemini AI chấm bài theo tiêu chí ĐHNN</p>
+
+  <div class="card" id="loginNote" style="display:none"><b>Bạn chưa đăng nhập.</b> Hãy <a href="index.html" style="color:var(--yl)">đăng nhập ở Trang chủ</a> rồi quay lại trang này để chấm bài.</div>
 
   <!-- API Key -->
   <div class="card" id="keyCard">
@@ -177,9 +181,20 @@ let toastT;function toast(m,ms){const t=$('toast');t.textContent=m;t.classList.a
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* Đổi model Gemini ở đây */
 const GEMINI_MODEL='gemini-2.5-flash';
+/* Dán địa chỉ Cloudflare Worker vào đây (vd 'https://ten.ban.workers.dev').
+   Có địa chỉ => học viên chỉ cần đăng nhập, không phải nhập key. Để '' => mỗi người tự nhập key như cũ. */
+const PROXY_URL='';
+let fbUser=null;
+if(PROXY_URL){
+  $('keyCard').style.display='none';
+  try{
+    firebase.initializeApp({apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",authDomain:"diktat-dashboard.firebaseapp.com",projectId:"diktat-dashboard",appId:"1:579828825281:web:6e764c41808673a7642840"});
+    firebase.auth().onAuthStateChanged(u=>{fbUser=u;$('loginNote').style.display=u?'none':'block';updateSubmit()});
+  }catch(e){console.warn('fb init',e)}
+}
 
 /* ===== API Key ===== */
-function getKey(){try{return localStorage.getItem('geminiKey')||''}catch(e){return ''}}
+function getKey(){if(PROXY_URL)return fbUser?'proxy':'';try{return localStorage.getItem('geminiKey')||''}catch(e){return ''}}
 function checkKey(){const k=getKey();if(k){$('apiKey').value='••••••••••••';$('keyOk').style.display='block';$('keyOk').textContent='✓ Đã lưu API key'}return !!k}
 $('saveKey').onclick=()=>{const v=$('apiKey').value.trim();if(!v||v==='••••••••••••'){toast('Hãy dán API key vào');return}try{localStorage.setItem('geminiKey',v)}catch(e){}checkKey();updateSubmit();toast('Đã lưu API key ✓')};
 checkKey();
@@ -285,7 +300,7 @@ $('submitBtn').onclick=gradeEssay;
 
 async function gradeEssay(){
   const key=getKey();
-  if(!key){toast('Hãy nhập API key trước');return}
+  if(!key){toast(PROXY_URL?'Hãy đăng nhập ở Trang chủ trước':'Hãy nhập API key trước');return}
   if(!curTask){toast('Hãy chọn đề bài');return}
   const text=$('ans').value.trim();
   if(countWords(text)<3){toast('Viết ít nhất vài từ');return}
@@ -358,7 +373,12 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
   try{
     let res,lastErr='';
     for(let attempt=0;attempt<3;attempt++){
-      res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body});
+      if(PROXY_URL){
+        const tok=await fbUser.getIdToken();
+        res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({prompt})});
+      }else{
+        res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body});
+      }
       if(res.ok)break;
       lastErr=await res.text();
       if(res.status===429||res.status>=500){
@@ -367,10 +387,14 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
       }
       break;
     }
-    if(!res.ok)throw new Error(`API lỗi ${res.status}: ${lastErr.slice(0,300)}`);
+    if(!res.ok){
+      let msg=lastErr.slice(0,300);
+      try{const j=JSON.parse(lastErr);if(j.error)msg=typeof j.error==='string'?j.error:(j.error.message||msg)}catch(_){}
+      throw new Error(`Lỗi ${res.status}: ${msg}`);
+    }
 
     const data=await res.json();
-    const raw=data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
+    const raw=PROXY_URL?(data.text||''):(data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'');
     if(!raw)throw new Error('Gemini không trả về nội dung (có thể bị bộ lọc chặn)');
     let r;
     try{r=JSON.parse(raw)}
