@@ -1452,6 +1452,7 @@ function fbInit(){
     if(u&&LIB_UID&&u.uid!==LIB_UID&&!(await fbMemberOk(u))){await firebase.auth().signOut();return}   /* signOut gọi lại hàm này với u=null */
     fbUser=u;if(u&&fbSessionCheck())return;fbAuthUI();
     if(u&&db){try{await fbSync();render()}catch(e){console.error('sync',e)}}
+    if(u&&db)await navRestore();
     if(u)fastAfterLogin();
   },e=>{console.warn('authState',e.code,e.message);gate('Lỗi khi kiểm tra đăng nhập.',{text:'🔄 Tải lại',fn:()=>location.reload()})});
 }
@@ -1582,6 +1583,39 @@ const _origPut=put,_origDel=del;
 put=(x,wa)=>{const au=wa&&x.audio instanceof Blob?x.audio:null,m=strip(x);
   return _origPut(x,wa).then(()=>{if(fbUser&&!fbSyncing&&fbIsAdmin())fbPut(m,au).catch(e=>console.warn('fb',e))})};
 del=id=>_origDel(id).then(()=>{if(fbUser&&!fbSyncing&&fbIsAdmin())fbDel(id).catch(e=>console.warn('fb',e))});
+
+/* ===== nhớ vị trí: tải lại trang vẫn ở đúng trang / bài / câu đang làm (kể cả chữ đang gõ) ===== */
+let navV='vCourses',navBusy=false,navDone=false;
+const _show0=show,_go0=go,_drawR0=drawR;
+show=function(v){_show0(v);navV=v;navSave()};
+go=function(i){_go0(i);navSave()};
+drawR=function(i){_drawR0(i);navSave()};
+function navSave(){if(navBusy||!navDone)return;try{
+  const o={v:navV,id:cur&&cur.id!=null?cur.id:null};
+  if(navV==='vType'){o.i=idx;o.h=heard[idx]||0;if(!force&&idx<lines.length)o.t=stale?lastInput:$('ans').value}
+  else if(navV==='vRead')o.i=ridx;
+  localStorage.setItem('diktatNav',JSON.stringify(o))}catch(e){}}
+$('ans').addEventListener('input',navSave);
+async function navRestore(){
+  if(navDone)return;let st=null;
+  try{st=JSON.parse(localStorage.getItem('diktatNav')||'null')}catch(e){}
+  navBusy=true;
+  try{if(st&&st.v){const v=st.v;
+    if(v==='vHome'){await render();show('vHome')}
+    else if(v==='vBk'){renderBk();show('vBk')}
+    else if(v==='vAcc'){if(!$('nAcc').classList.contains('hide')){accRender();show('vAcc')}}
+    else if(v==='vAdd')show('vAdd')
+    else if(st.id!=null&&['vMode','vEdit','vType','vRead'].includes(v)){
+      const c=await get(st.id);
+      if(c){cur=c;$('mt').textContent=head();
+        if(v==='vType'){await ensureSegs();startPractice();
+          if(st.i>0&&st.i<lines.length)go(st.i);
+          heard[idx]=st.h||0;listenUI();
+          if(st.t){$('ans').value=st.t;paint()}}
+        else if(v==='vRead'){await ensureSegs();startRead();drawR(st.i||0)}
+        else show('vMode')}}}
+  }catch(e){console.warn('navRestore',e)}
+  navBusy=false;navDone=true;navSave()}
 openDB().then(d=>{db=d;render();fbInit()});
 
 (function(){const tb=document.getElementById('skTab');if(!tb)return;
