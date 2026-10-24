@@ -239,50 +239,51 @@ checkKey();
 $('apiKey').addEventListener('focus',function(){if(this.value==='••••••••••••')this.value=''});   /* bấm vào ô để nhập key mới */
 
 /* ===== Đề bài ===== */
+/* Thêm đề mới: copy 1 khối {…} bên dưới, đổi id/title/desc/aufgabe và ghi level:'A1' | 'A2' | 'B1'… (level quyết định mức chấm của Gemini) */
 const TASKS=[
   /* === Tiếng Đức 1A – Viết thư/Email === */
-  {id:'1a-1',type:'1A',title:'Einladung zur Party',pts:'5 Điểm',words:30,
+  {id:'1a-1',type:'1A',level:'A1',title:'Einladung zur Party',pts:'5 Điểm',words:30,
    desc:`<b>Bạn muốn mời bạn của bạn đến bữa tiệc sinh nhật.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wann?</b> – Bữa tiệc khi nào?<br>• <b>Wo?</b> – Ở đâu?<br>• <b>Was mitbringen?</b> – Mang theo gì?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Tình huống: Viết cho bạn bè (informell, du)',
    aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin. Lade ihn/sie zu deiner Geburtstagsparty ein. Schreibe über: Wann ist die Party? Wo ist die Party? Was soll er/sie mitbringen? Schreibe ca. 30 Wörter.'},
 
-  {id:'1a-2',type:'1A',title:'Neuer Deutschkurs',pts:'5 Điểm',words:30,
+  {id:'1a-2',type:'1A',level:'A1',title:'Neuer Deutschkurs',pts:'5 Điểm',words:30,
    desc:`<b>Bạn bắt đầu một khoá học tiếng Đức mới.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wo?</b> – Khoá học ở đâu?<br>• <b>Wann?</b> – Khi nào? (Ngày, giờ)<br>• <b>Lehrerin/Lehrer?</b> – Giáo viên như thế nào?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Tình huống: Viết cho bạn bè (informell, du)',
    aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin über deinen neuen Deutschkurs. Schreibe über: Wo ist der Kurs? Wann ist der Kurs? Wie ist der Lehrer / die Lehrerin? Schreibe ca. 30 Wörter.'},
 
-  {id:'1a-3',type:'1A',title:'Neue Wohnung',pts:'5 Điểm',words:30,
+  {id:'1a-3',type:'1A',level:'A1',title:'Neue Wohnung',pts:'5 Điểm',words:30,
    desc:`<b>Bạn có một căn hộ mới.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wo?</b> – Căn hộ ở đâu?<br>• <b>Wie groß?</b> – Lớn như thế nào? Mấy phòng?<br>• <b>Möbel?</b> – Bạn cần đồ nội thất gì?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Tình huống: Viết cho bạn bè (informell, du)',
    aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin über deine neue Wohnung. Schreibe über: Wo ist die Wohnung? Wie groß ist sie? Welche Möbel brauchst du? Schreibe ca. 30 Wörter.'},
 
-  {id:'1a-4',type:'1A',title:'Termin beim Arzt',pts:'5 Điểm',words:30,
+  {id:'1a-4',type:'1A',level:'A1',title:'Termin beim Arzt',pts:'5 Điểm',words:30,
    desc:`<b>Bạn bị ốm và muốn đặt lịch khám bác sĩ.</b><br>Viết một E-Mail cho phòng khám. Hãy viết về 3 điểm sau:<br><br>• <b>Problem?</b> – Bạn bị làm sao?<br>• <b>Wann?</b> – Bạn muốn đến khi nào?<br>• <b>Telefonnummer?</b> – Số điện thoại của bạn?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Tình huống: Viết cho phòng khám (formell, Sie)',
    aufgabe:'Schreibe eine E-Mail an eine Arztpraxis. Du möchtest einen Termin. Schreibe über: Was ist Ihr Problem? Wann möchten Sie kommen? Wie ist Ihre Telefonnummer? Schreibe ca. 30 Wörter.'},
 
-  {id:'1a-5',type:'1A',title:'Essen gehen',pts:'5 Điểm',words:30,
+  {id:'1a-5',type:'1A',level:'A1',title:'Essen gehen',pts:'5 Điểm',words:30,
    desc:`<b>Bạn muốn đi ăn với bạn.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wann?</b> – Khi nào?<br>• <b>Wo?</b> – Nhà hàng nào?<br>• <b>Was essen?</b> – Ăn gì?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Tình huống: Viết cho bạn bè (informell, du)',
    aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin. Ihr wollt zusammen essen gehen. Schreibe über: Wann wollt ihr essen gehen? In welches Restaurant? Was möchtest du essen? Schreibe ca. 30 Wörter.'},
 
   /* === Tiếng Đức 1B – Viết đoạn văn === */
-  {id:'1b-1',type:'1B',title:'Mein Alltag',pts:'2.5 Điểm',words:30,
+  {id:'1b-1',type:'1B',level:'A1',title:'Mein Alltag',pts:'2.5 Điểm',words:30,
    desc:`<b>Viết một đoạn văn về cuộc sống hàng ngày của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Wann stehst du auf?</b> – Bạn dậy lúc mấy giờ?<br>• <b>Was machst du am Vormittag/Nachmittag?</b> – Buổi sáng/chiều bạn làm gì?<br>• <b>Was machst du am Abend?</b> – Buổi tối bạn làm gì?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Đoạn văn liên quan đến bản thân',
    aufgabe:'Schreibe einen kurzen Text über deinen Alltag. Schreibe über: Wann stehst du auf? Was machst du am Vormittag und am Nachmittag? Was machst du am Abend? Schreibe ca. 30 Wörter.'},
 
-  {id:'1b-2',type:'1B',title:'Meine Familie',pts:'2.5 Điểm',words:30,
+  {id:'1b-2',type:'1B',level:'A1',title:'Meine Familie',pts:'2.5 Điểm',words:30,
    desc:`<b>Viết một đoạn văn về gia đình bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Wie groß ist deine Familie?</b> – Gia đình có mấy người?<br>• <b>Was machen sie?</b> – Họ làm nghề gì?<br>• <b>Was macht ihr zusammen?</b> – Cả nhà hay làm gì cùng nhau?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Đoạn văn liên quan đến bản thân',
    aufgabe:'Schreibe einen kurzen Text über deine Familie. Schreibe über: Wie viele Personen hat deine Familie? Was machen sie (Beruf)? Was macht ihr gern zusammen? Schreibe ca. 30 Wörter.'},
 
-  {id:'1b-3',type:'1B',title:'Meine Hobbys',pts:'2.5 Điểm',words:30,
+  {id:'1b-3',type:'1B',level:'A1',title:'Meine Hobbys',pts:'2.5 Điểm',words:30,
    desc:`<b>Viết một đoạn văn về sở thích của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Was sind deine Hobbys?</b> – Sở thích của bạn là gì?<br>• <b>Wann?</b> – Bạn làm khi nào?<br>• <b>Mit wem?</b> – Với ai?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Đoạn văn liên quan đến bản thân',
    aufgabe:'Schreibe einen kurzen Text über deine Hobbys. Schreibe über: Was sind deine Hobbys? Wann machst du das? Mit wem? Schreibe ca. 30 Wörter.'},
 
-  {id:'1b-4',type:'1B',title:'Mein Wochenende',pts:'2.5 Điểm',words:30,
+  {id:'1b-4',type:'1B',level:'A1',title:'Mein Wochenende',pts:'2.5 Điểm',words:30,
    desc:`<b>Viết một đoạn văn về cuối tuần của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Was machst du am Samstag?</b> – Thứ Bảy bạn làm gì?<br>• <b>Was machst du am Sonntag?</b> – Chủ Nhật bạn làm gì?<br>• <b>Was gefällt dir am Wochenende?</b> – Bạn thích gì nhất ở cuối tuần?<br><br>Viết khoảng <b>30 từ</b>.`,
    hint:'Đoạn văn liên quan đến bản thân',
    aufgabe:'Schreibe einen kurzen Text über dein Wochenende. Schreibe über: Was machst du am Samstag? Was machst du am Sonntag? Was gefällt dir am Wochenende? Schreibe ca. 30 Wörter.'},
@@ -396,7 +397,7 @@ RUBRIC (1B – Viết đoạn văn, tổng ${maxPts} điểm). Chấm 4 tiêu ch
 3. wortschatz (tối đa ${maxPts*0.25}): từ vựng phù hợp, đa dạng; liên kết câu (und, oder, aber, dann, zuerst…); mở–kết bài
 4. strukturen (tối đa ${maxPts*0.25}): hình thái, cấu trúc câu, chính tả – ít lỗi`;
 
-  const prompt=`Du bist ein strenger aber fairer Deutschlehrer an der Universität Hanoi. Ein A1-Student hat folgende Schreibaufgabe gemacht.
+  const prompt=`Du bist ein strenger aber fairer Deutschlehrer an der Universität Hanoi. Ein Student auf dem Niveau ${curTask.level||'A1'} (GER/CEFR) hat folgende Schreibaufgabe gemacht. Bewerte streng nach den Erwartungen an das Niveau ${curTask.level||'A1'}: Wortschatz, Strukturen und Textlänge müssen zu diesem Niveau passen (nicht zu einfach, nicht zu schwer).
 
 AUFGABE:
 ${curTask.aufgabe}
