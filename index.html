@@ -1213,7 +1213,7 @@ function listenUI(){const h=Math.min(heard[idx]||0,LISTEN_NEED);
   const b=$('relisten');if(b)b.textContent=`🔊 Nghe lại (${h}/${LISTEN_NEED})`}
 function listenOk(){const h=heard[idx]||0;
   if(h>=LISTEN_NEED){$('lmsg').textContent='';return true}
-  $('lmsg').textContent=`Hãy nghe câu này ${LISTEN_NEED} lần trước khi kiểm tra tiếp hoặc sang câu sau (còn ${LISTEN_NEED-h} lần). Bấm “🔊 Nghe lại” hoặc nhấn Ctrl.`;return false}
+  $('lmsg').textContent='';return false}
 function replay(){const s=segs[idx];if(s){heard[idx]=(heard[idx]||0)+1;$('lmsg').textContent='';listenUI();playRange(s[0],s[1])}}
 function target(i){let t=lines[i];if(pnOn)t=t.replace(/[.,;:!?„“"”»«()\-–—…]/g,'');return t.replace(/\s+/g,' ').trim()}
 const eq=(a,b)=>csOn?a===b:a.toLowerCase()===b.toLowerCase();
@@ -1248,7 +1248,6 @@ const cleanAns=v=>{let u=v.replace(/\*/g,'');if(pnOn)u=u.replace(/[.,;:!?„“"
 function check(){const ta=$('ans'),raw=stale?lastInput:ta.value,u=cleanAns(raw);if(!u){replay();return}
   const t=target(idx);
   /* viết đúng rồi -> sang câu sau luôn, không cần nghe đủ 5 lần; chỉ khi chưa đúng mới bắt nghe đủ 5 lần */
-  if(!eq(t,u)&&!listenOk())return;
   tries++;
   if(eq(t,u)){if(tries===1)good++;force='ok';ta.value=lines[idx];ta.readOnly=true;paint();setTimeout(()=>go(idx+1),700)}
   else{force=null;lastInput=raw;ta.value=mask(t,u);const p=ta.value.indexOf('*');paint();ta.focus();if(p>=0)ta.setSelectionRange(p,p);setStale(true)}}
