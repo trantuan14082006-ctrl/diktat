@@ -30,6 +30,7 @@ main{max-width:1480px;margin:0 auto;padding:10px 48px 70px}
 .th{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin:18px 0 26px}
 h1{margin:0;font-size:clamp(24px,3.2vw,38px);line-height:1.2;border-left:5px solid var(--gr);padding-left:20px}
 h3{font-size:22px;margin:0 0 18px}
+.srch{width:min(500px,100%);border:1px solid var(--bd);border-radius:12px;padding:13px 16px;background:var(--bg);color:var(--tx);font:16px inherit}
 .col{max-width:690px}.col.w2{max-width:760px}
 .mu{color:var(--mu);font-size:14px}.hide{display:none!important}
 
@@ -148,13 +149,14 @@ h3{font-size:22px;margin:0 0 18px}
     </div>
     <div class="key-ok" id="keyOk" style="display:none">✓ Đã lưu API key</div>
   </div>
-  <p class="mu" style="margin:0 0 6px"><a href="#" id="keyLink" style="color:var(--mu);display:none">🔑 Đổi API key</a></p>
 
   <!-- Màn hình 1: danh sách đề -->
   <div id="vList">
-    <div class="th"><h1>Intensives Schreiben</h1></div>
+    <div class="th"><h1>Intensives Schreiben</h1><input class="srch" id="q" placeholder="🔍  Suchen" autocomplete="off"></div>
     <h3>Schreiben A1</h3>
     <div class="col" id="prompts"></div>
+    <p class="mu" id="noTask" style="display:none">Không có đề nào khớp.</p>
+    <p class="mu" style="margin-top:26px"><a href="#" id="keyLink" style="color:var(--mu);display:none">🔑 Đổi API key</a></p>
   </div>
 
   <!-- Màn hình 2: làm bài -->
@@ -292,17 +294,24 @@ let curTask=null;
 const VIEWS=['vList','vTask'];
 function show(v){VIEWS.forEach(i=>$(i).classList.toggle('hide',i!==v));const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin');window.scrollTo({top:0})}
 
-function renderPrompts(){
+function renderPrompts(q){
+  q=(q||'').trim().toLowerCase();
   const groups=[{type:'1A',name:'1A – Viết thư / E-Mail'},{type:'1B',name:'1B – Viết đoạn văn'}];
   const c=$('prompts');
-  c.innerHTML=groups.map(g=>`<div class="acc"><div class="ah" role="button" tabindex="0"><em class="nm">${g.name}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${TASKS.filter(t=>t.type===g.type).map(t=>`<div class="pill" role="button" tabindex="0" data-id="${t.id}">${t.title}<small>${t.pts} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`).join('');
+  const html=groups.map(g=>{
+    const list=TASKS.filter(t=>t.type===g.type&&(!q||(t.title+' '+t.hint+' '+g.name).toLowerCase().includes(q)));
+    if(!list.length)return '';
+    return `<div class="acc${q?' open':''}"><div class="ah" role="button" tabindex="0"><em class="nm">${g.name}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${list.map(t=>`<div class="pill" role="button" tabindex="0" data-id="${t.id}">${t.title}<small>${t.pts} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`;
+  }).join('');
+  c.innerHTML=html;
+  $('noTask').style.display=html?'none':'block';
   c.onclick=e=>{const p=e.target.closest('.pill');if(p){selectTask(p.dataset.id);return}const h=e.target.closest('.ah');if(h)h.parentElement.classList.toggle('open')};
   c.onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest('.pill,.ah');if(!t)return;e.preventDefault();t.click()};
 }
 
 function selectTask(id){
   curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
-  $('ttl').textContent=curTask.title;
+  $('ttl').textContent='Schreiben A1 / '+curTask.title;
   $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts">${curTask.type} – ${curTask.pts}</span></div>${curTask.desc}<br><small style="color:var(--mu)">${curTask.hint}</small>`;
   $('wreq').textContent=curTask.words;
   $('ans').value='';$('wcount').textContent='0';$('wcount').style.color='';
@@ -313,6 +322,7 @@ function selectTask(id){
 }
 
 renderPrompts();
+$('q').addEventListener('input',()=>renderPrompts($('q').value));
 
 /* Nút chèn ä ö ü ß, quay lại danh sách */
 document.querySelectorAll('.tools [data-c]').forEach(b=>{
