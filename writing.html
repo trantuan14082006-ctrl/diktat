@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(localStorage.getItem('diktatTheme')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}</script>
+<title>Schreiben – Diktat Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M6 20A14 14 0 0 1 20 6H44A14 14 0 0 1 58 20V54A4 4 0 0 1 54 58H10A4 4 0 0 1 6 54Z' fill='none' stroke='%23f5b301' stroke-width='8' stroke-linejoin='round'/%3E%3Cpath d='M23 21H31A11 11 0 0 1 31 43H23Z' fill='none' stroke='%23f5b301' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{box-sizing:border-box;
+--bg:#fff;--g:#f3f4f2;--gr:#e5a800;--tx:#14181f;--mu:#5b6470;--bd:#d5d9d4;--sel:#fff1bf;--bad:#c0341d;--sh:0 2px 10px rgba(0,0,0,.1);--yl:#f5b301;--yl2:#fff6d6;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+
+/* Header */
+.hd{max-width:1100px;margin:0 auto;padding:12px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.logo{cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--yl);font-weight:700;font-size:22px;text-decoration:none}
+.logo b{width:40px;height:40px;border-radius:12px 12px 4px 4px;border:4px solid var(--yl);display:grid;place-items:center;font-size:20px}
+.logo:hover b{transform:rotate(-6deg) scale(1.06)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.tg{width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);background:var(--g);color:var(--tx);font-size:19px;cursor:pointer;display:grid;place-items:center;padding:0;transition:border-color .2s,transform .2s}
+.tg:hover{border-color:var(--yl);transform:rotate(-12deg) scale(1.06)}
+.back{padding:7px 14px;border:2px solid var(--bd);border-radius:8px;background:var(--g);color:var(--tx);font:600 14px system-ui;cursor:pointer;text-decoration:none;transition:border-color .2s,transform .2s}
+.back:hover{border-color:var(--yl);transform:translateY(-2px)}
+
+/* Main */
+main{max-width:1100px;margin:0 auto;padding:10px 48px 70px}
+h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5px solid var(--gr);padding-left:20px}
+.sub{color:var(--mu);margin:0 0 28px;padding-left:25px}
+
+/* Cards */
+.card{background:var(--g);border-radius:18px;padding:24px 28px;margin-bottom:18px}
+.card h3{margin:0 0 14px;font-size:20px}
+.card label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
+.card input[type=text],.card input[type=password],.card select,.card textarea{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:16px inherit}
+.card textarea{min-height:180px;resize:vertical;line-height:1.6}
+
+/* Buttons */
+.btn{border:0;border-radius:12px;padding:15px 28px;font:600 16px system-ui,sans-serif;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12)}
+.btn:active{transform:scale(.97);box-shadow:none}
+.btn-p{background:var(--gr);color:var(--tx)}
+.btn-s{background:var(--g);color:var(--tx);border:1px solid var(--bd)}
+.btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+
+/* Word count */
+.wc{text-align:right;font-size:14px;color:var(--mu);margin-top:6px}
+.wc b{color:var(--tx)}
+
+/* Prompt cards */
+.prompts{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:14px 0}
+.prompt-card{background:var(--bg);border:2px solid var(--bd);border-radius:14px;padding:18px 22px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s}
+.prompt-card:hover{border-color:var(--yl);transform:translateX(4px);box-shadow:0 4px 14px rgba(0,0,0,.07)}
+.prompt-card.on{border-color:var(--gr);background:var(--yl2)}
+.prompt-card h4{margin:0 0 6px;font-size:17px}
+.prompt-card p{margin:0;font-size:14px;color:var(--mu);line-height:1.4}
+.prompt-card .pts{display:inline-block;background:var(--yl);color:var(--tx);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;margin-bottom:8px}
+
+/* Results */
+.result{background:var(--bg);border:2px solid var(--gr);border-radius:18px;padding:24px 28px;margin-top:20px;display:none}
+.result.on{display:block}
+.result h3{margin:0 0 16px;color:var(--gr)}
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.score-item{background:var(--g);border-radius:12px;padding:14px 18px}
+.score-item .label{font-size:13px;color:var(--mu);margin-bottom:4px}
+.score-item .val{font-size:28px;font-weight:700;color:var(--gr)}
+.score-item .max{font-size:14px;color:var(--mu);font-weight:400}
+.feedback{margin-top:16px;line-height:1.7;white-space:pre-wrap}
+.feedback h4{margin:18px 0 8px;color:var(--tx)}
+.corrections{background:var(--g);border-radius:12px;padding:16px 20px;margin-top:14px;font-size:15px;line-height:1.7;white-space:pre-wrap}
+
+/* Loading */
+.loading{display:none;align-items:center;gap:12px;margin-top:16px;color:var(--mu)}
+.loading.on{display:flex}
+.spin{width:24px;height:24px;border:3px solid var(--bd);border-top-color:var(--yl);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* API key */
+.key-bar{display:flex;gap:8px;align-items:center}
+.key-bar input{flex:1}
+.key-bar .btn{padding:10px 18px;flex:none}
+.key-ok{color:#158f4a;font-size:14px;margin-top:4px}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:#14181f;color:#fff;padding:12px 22px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:400}
+#toast.on{opacity:1;transform:translateX(-50%)}
+
+/* Dark mode */
+:root[data-theme=dark]{color-scheme:dark;
+--bg:#16181d;--g:#22262d;--gr:#d4a017;--tx:#e8eaee;--mu:#98a1ad;--bd:#383e48;--sel:#4a3d12;--bad:#ff8272;--sh:0 2px 12px rgba(0,0,0,.55);--yl:#e0ac1a;--yl2:#3a3110}
+:root[data-theme=dark] .result{border-color:var(--gr)}
+
+/* Responsive */
+@media(max-width:700px){main{padding:6px 16px 60px}.hd{padding:10px 16px}.card{padding:18px 16px}.score-grid{grid-template-columns:1fr}}
+
+/* Animation */
+@keyframes vin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.vin{animation:vin .35s cubic-bezier(.2,.7,.2,1) both}
+@media(prefers-reduced-motion:reduce){.vin{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- Header -->
+<header class="hd">
+  <a class="logo" href="index.html"><b>D</b>Diktat Dashboard</a>
+  <div class="hdr-r">
+    <a class="back" href="index.html">← Trang chủ</a>
+    <button class="tg" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌙</button>
+  </div>
+</header>
+
+<main>
+  <h1>✍️ Schreiben (Viết)</h1>
+  <p class="sub">Luyện viết tiếng Đức A1 – Gemini AI chấm bài theo tiêu chí ĐHNN</p>
+
+  <!-- API Key -->
+  <div class="card" id="keyCard">
+    <h3>🔑 Gemini API Key</h3>
+    <p style="font-size:14px;color:var(--mu);margin:0 0 10px">Key được lưu trên trình duyệt của bạn, không gửi đi đâu ngoài Google AI.</p>
+    <div class="key-bar">
+      <input type="password" id="apiKey" placeholder="Dán API key vào đây…" autocomplete="off">
+      <button class="btn btn-p" id="saveKey">Lưu</button>
+    </div>
+    <div class="key-ok" id="keyOk" style="display:none">✓ Đã lưu API key</div>
+  </div>
+
+  <!-- Chọn loại bài -->
+  <div class="card">
+    <h3>📝 Chọn dạng bài</h3>
+    <div class="prompts" id="prompts"></div>
+  </div>
+
+  <!-- Đề bài chi tiết -->
+  <div class="card" id="taskCard" style="display:none">
+    <h3>📋 Đề bài</h3>
+    <div id="taskDesc" style="line-height:1.7"></div>
+
+    <label for="ans">Bài viết của bạn:</label>
+    <textarea id="ans" placeholder="Viết bài tiếng Đức ở đây…"></textarea>
+    <div class="wc">Số từ: <b id="wcount">0</b> / <span id="wreq">30</span></div>
+
+    <div class="btns">
+      <button class="btn btn-p" id="submitBtn" disabled>📤 Chấm bài</button>
+      <button class="btn btn-s" id="clearBtn">🗑️ Xoá</button>
+      <button class="btn btn-s" id="newBtn">🔄 Đề khác</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spin"></div>
+      <span id="loadMsg">Đang gửi bài cho Gemini chấm…</span>
+    </div>
+
+    <!-- Kết quả -->
+    <div class="result" id="result">
+      <h3>📊 Kết quả chấm bài</h3>
+      <div class="score-grid" id="scores"></div>
+      <div class="corrections" id="corrections"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+
+/* ===== Theme ===== */
+const themeBtn=$('themeBtn');
+function setTheme(t){document.documentElement.dataset.theme=t;themeBtn.textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('diktatTheme',t)}catch(e){}}
+themeBtn.onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+
+/* ===== Toast ===== */
+let toastT;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2500)}
+
+/* ===== API Key ===== */
+function getKey(){try{return localStorage.getItem('geminiKey')||''}catch(e){return ''}}
+function checkKey(){const k=getKey();if(k){$('apiKey').value='••••••••••••';$('keyOk').style.display='block';$('keyOk').textContent='✓ Đã lưu API key'}return !!k}
+$('saveKey').onclick=()=>{const v=$('apiKey').value.trim();if(!v||v==='••••••••••••'){toast('Hãy dán API key vào');return}try{localStorage.setItem('geminiKey',v)}catch(e){}checkKey();toast('Đã lưu API key ✓')};
+checkKey();
+
+/* ===== Đề bài ===== */
+const TASKS=[
+  /* === Tiếng Đức 1A – Viết thư/Email === */
+  {id:'1a-1',type:'1A',title:'Einladung zur Party',pts:'5 Điểm',words:30,
+   desc:`<b>Bạn muốn mời bạn của bạn đến bữa tiệc sinh nhật.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wann?</b> – Bữa tiệc khi nào?<br>• <b>Wo?</b> – Ở đâu?<br>• <b>Was mitbringen?</b> – Mang theo gì?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Tình huống: Viết cho bạn bè (informell, du)',
+   aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin. Lade ihn/sie zu deiner Geburtstagsparty ein. Schreibe über: Wann ist die Party? Wo ist die Party? Was soll er/sie mitbringen? Schreibe ca. 30 Wörter.'},
+
+  {id:'1a-2',type:'1A',title:'Neuer Deutschkurs',pts:'5 Điểm',words:30,
+   desc:`<b>Bạn bắt đầu một khoá học tiếng Đức mới.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wo?</b> – Khoá học ở đâu?<br>• <b>Wann?</b> – Khi nào? (Ngày, giờ)<br>• <b>Lehrerin/Lehrer?</b> – Giáo viên như thế nào?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Tình huống: Viết cho bạn bè (informell, du)',
+   aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin über deinen neuen Deutschkurs. Schreibe über: Wo ist der Kurs? Wann ist der Kurs? Wie ist der Lehrer / die Lehrerin? Schreibe ca. 30 Wörter.'},
+
+  {id:'1a-3',type:'1A',title:'Neue Wohnung',pts:'5 Điểm',words:30,
+   desc:`<b>Bạn có một căn hộ mới.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wo?</b> – Căn hộ ở đâu?<br>• <b>Wie groß?</b> – Lớn như thế nào? Mấy phòng?<br>• <b>Möbel?</b> – Bạn cần đồ nội thất gì?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Tình huống: Viết cho bạn bè (informell, du)',
+   aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin über deine neue Wohnung. Schreibe über: Wo ist die Wohnung? Wie groß ist sie? Welche Möbel brauchst du? Schreibe ca. 30 Wörter.'},
+
+  {id:'1a-4',type:'1A',title:'Termin beim Arzt',pts:'5 Điểm',words:30,
+   desc:`<b>Bạn bị ốm và muốn đặt lịch khám bác sĩ.</b><br>Viết một E-Mail cho phòng khám. Hãy viết về 3 điểm sau:<br><br>• <b>Problem?</b> – Bạn bị làm sao?<br>• <b>Wann?</b> – Bạn muốn đến khi nào?<br>• <b>Telefonnummer?</b> – Số điện thoại của bạn?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Tình huống: Viết cho phòng khám (formell, Sie)',
+   aufgabe:'Schreibe eine E-Mail an eine Arztpraxis. Du möchtest einen Termin. Schreibe über: Was ist Ihr Problem? Wann möchten Sie kommen? Wie ist Ihre Telefonnummer? Schreibe ca. 30 Wörter.'},
+
+  {id:'1a-5',type:'1A',title:'Essen gehen',pts:'5 Điểm',words:30,
+   desc:`<b>Bạn muốn đi ăn với bạn.</b><br>Viết một E-Mail cho bạn của bạn. Hãy viết về 3 điểm sau:<br><br>• <b>Wann?</b> – Khi nào?<br>• <b>Wo?</b> – Nhà hàng nào?<br>• <b>Was essen?</b> – Ăn gì?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Tình huống: Viết cho bạn bè (informell, du)',
+   aufgabe:'Schreibe eine E-Mail an deinen Freund / deine Freundin. Ihr wollt zusammen essen gehen. Schreibe über: Wann wollt ihr essen gehen? In welches Restaurant? Was möchtest du essen? Schreibe ca. 30 Wörter.'},
+
+  /* === Tiếng Đức 1B – Viết đoạn văn === */
+  {id:'1b-1',type:'1B',title:'Mein Alltag',pts:'2.5 Điểm',words:30,
+   desc:`<b>Viết một đoạn văn về cuộc sống hàng ngày của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Wann stehst du auf?</b> – Bạn dậy lúc mấy giờ?<br>• <b>Was machst du am Vormittag/Nachmittag?</b> – Buổi sáng/chiều bạn làm gì?<br>• <b>Was machst du am Abend?</b> – Buổi tối bạn làm gì?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Đoạn văn liên quan đến bản thân',
+   aufgabe:'Schreibe einen kurzen Text über deinen Alltag. Schreibe über: Wann stehst du auf? Was machst du am Vormittag und am Nachmittag? Was machst du am Abend? Schreibe ca. 30 Wörter.'},
+
+  {id:'1b-2',type:'1B',title:'Meine Familie',pts:'2.5 Điểm',words:30,
+   desc:`<b>Viết một đoạn văn về gia đình bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Wie groß ist deine Familie?</b> – Gia đình có mấy người?<br>• <b>Was machen sie?</b> – Họ làm nghề gì?<br>• <b>Was macht ihr zusammen?</b> – Cả nhà hay làm gì cùng nhau?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Đoạn văn liên quan đến bản thân',
+   aufgabe:'Schreibe einen kurzen Text über deine Familie. Schreibe über: Wie viele Personen hat deine Familie? Was machen sie (Beruf)? Was macht ihr gern zusammen? Schreibe ca. 30 Wörter.'},
+
+  {id:'1b-3',type:'1B',title:'Meine Hobbys',pts:'2.5 Điểm',words:30,
+   desc:`<b>Viết một đoạn văn về sở thích của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Was sind deine Hobbys?</b> – Sở thích của bạn là gì?<br>• <b>Wann?</b> – Bạn làm khi nào?<br>• <b>Mit wem?</b> – Với ai?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Đoạn văn liên quan đến bản thân',
+   aufgabe:'Schreibe einen kurzen Text über deine Hobbys. Schreibe über: Was sind deine Hobbys? Wann machst du das? Mit wem? Schreibe ca. 30 Wörter.'},
+
+  {id:'1b-4',type:'1B',title:'Mein Wochenende',pts:'2.5 Điểm',words:30,
+   desc:`<b>Viết một đoạn văn về cuối tuần của bạn.</b><br>Hãy viết về 3 điểm sau:<br><br>• <b>Was machst du am Samstag?</b> – Thứ Bảy bạn làm gì?<br>• <b>Was machst du am Sonntag?</b> – Chủ Nhật bạn làm gì?<br>• <b>Was gefällt dir am Wochenende?</b> – Bạn thích gì nhất ở cuối tuần?<br><br>Viết khoảng <b>30 từ</b>.`,
+   hint:'Đoạn văn liên quan đến bản thân',
+   aufgabe:'Schreibe einen kurzen Text über dein Wochenende. Schreibe über: Was machst du am Samstag? Was machst du am Sonntag? Was gefällt dir am Wochenende? Schreibe ca. 30 Wörter.'},
+];
+
+let curTask=null;
+
+function renderPrompts(){
+  const c=$('prompts');
+  c.innerHTML=TASKS.map(t=>`<div class="prompt-card" data-id="${t.id}">
+    <span class="pts">${t.type} – ${t.pts}</span>
+    <h4>${t.title}</h4>
+    <p>${t.hint}</p>
+  </div>`).join('');
+  c.onclick=e=>{const card=e.target.closest('.prompt-card');if(!card)return;
+    const id=card.dataset.id;selectTask(id)}
+}
+
+function selectTask(id){
+  curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
+  document.querySelectorAll('.prompt-card').forEach(c=>c.classList.toggle('on',c.dataset.id===id));
+  $('taskCard').style.display='';
+  $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts" style="font-size:13px">${curTask.type} – ${curTask.pts}</span></div>${curTask.desc}<br><small style="color:var(--mu)">${curTask.hint}</small>`;
+  $('wreq').textContent=curTask.words;
+  $('ans').value='';$('wcount').textContent='0';
+  $('result').classList.remove('on');
+  $('ans').focus();
+  $('taskCard').scrollIntoView({behavior:'smooth',block:'start'});
+  updateSubmit();
+}
+
+renderPrompts();
+
+/* ===== Word counter ===== */
+const countWords=s=>s.trim()?s.trim().split(/\s+/).length:0;
+$('ans').addEventListener('input',()=>{
+  const n=countWords($('ans').value);
+  $('wcount').textContent=n;
+  $('wcount').style.color=n>=20?'var(--gr)':'var(--tx)';
+  updateSubmit();
+});
+function updateSubmit(){$('submitBtn').disabled=!getKey()||countWords($('ans').value)<3||!curTask}
+
+/* ===== Clear & New ===== */
+$('clearBtn').onclick=()=>{$('ans').value='';$('wcount').textContent='0';$('result').classList.remove('on');$('ans').focus();updateSubmit()};
+$('newBtn').onclick=()=>{
+  const pool=TASKS.filter(t=>t.id!==curTask?.id);
+  const pick=pool[Math.floor(Math.random()*pool.length)];
+  selectTask(pick.id);
+};
+
+/* ===== Gemini grading ===== */
+$('submitBtn').onclick=gradeEssay;
+
+async function gradeEssay(){
+  const key=getKey();
+  if(!key){toast('Hãy nhập API key trước');return}
+  if(!curTask){toast('Hãy chọn đề bài');return}
+  const text=$('ans').value.trim();
+  if(countWords(text)<3){toast('Viết ít nhất vài từ');return}
+
+  $('submitBtn').disabled=true;
+  $('loading').classList.add('on');
+  $('result').classList.remove('on');
+  $('loadMsg').textContent='Đang gửi bài cho Gemini chấm…';
+
+  const is1A=curTask.type==='1A';
+  const maxPts=is1A?5:2.5;
+
+  const rubric=is1A?`
+RUBRIC (Tiếng Đức 1A – Viết thư/Email, tổng ${maxPts} điểm):
+1. Mức độ hoàn thành nhiệm vụ / Chức năng ngôn ngữ (Inhaltliche Angemessenheit):
+   - ${maxPts}: Cả 3 chức năng ngôn ngữ phù hợp về nội dung và phạm vi
+   - ${maxPts*0.7}: 2 chức năng phù hợp hoặc 1 phù hợp + 2 phù hợp một phần
+   - ${maxPts*0.4}: 1 chức năng phù hợp + 1 phù hợp một phần, hoặc tất cả phù hợp một phần
+   - ${maxPts*0.1}: 1 chức năng phù hợp hoặc phù hợp một phần
+   - 0: Số từ < 50% yêu cầu hoặc sai chủ đề → TỔNG ĐIỂM = 0
+
+2. Ngữ vực (Soziolinguistische Angemessenheit): Phù hợp tình huống và đối tượng (du/Sie, Anrede, Gruß)
+
+3. Ngôn ngữ (Sprachliche Umsetzung):
+   - Liên kết (Kohärenz/Kohäsion): und, oder, aber, dann…
+   - Từ vựng (Wortschatz): phù hợp và đa dạng
+   - Cấu trúc (Strukturen): chính tả, hình thái, trật tự câu
+   - Lỗi: ít lỗi, không ảnh hưởng đến sự hiểu`
+  :`
+RUBRIC (Tiếng Đức 1B – Viết đoạn văn, tổng ${maxPts} điểm):
+1. Mức độ hoàn thành nhiệm vụ / Chức năng ngôn ngữ:
+   - ${maxPts}: Cả 3 chức năng ngôn ngữ phù hợp về nội dung và phạm vi
+   - ${maxPts*0.8}: 2 chức năng phù hợp hoặc 1 phù hợp + 2 phù hợp một phần
+   - ${maxPts*0.4}: 1 chức năng phù hợp + 1 phù hợp một phần
+   - ${maxPts*0.2}: 1 chức năng phù hợp hoặc phù hợp một phần
+   - 0: Số từ < 50% yêu cầu hoặc sai chủ đề → TỔNG ĐIỂM = 0
+
+2. Ngữ vực: Phù hợp tình huống và đối tượng
+
+3. Liên kết:
+   - Cấu trúc văn bản (mở đầu, kết bài): nhất quán và hợp lý
+   - Liên kết giữa các câu và vế câu: und, oder, aber, dann, zuerst…
+
+4. Từ vựng: phù hợp, đa dạng; mức độ thành thạo (ít lỗi từ vựng)
+
+5. Cấu trúc: đa dạng; mức độ thành thạo (hình thái, cấu trúc câu, chính tả – ít lỗi)`;
+
+  const prompt=`Du bist ein strenger aber fairer Deutschlehrer an der Universität Hanoi. Ein A1-Student hat folgende Schreibaufgabe gemacht.
+
+AUFGABE:
+${curTask.aufgabe}
+
+ANTWORT DES STUDENTEN:
+"""
+${text}
+"""
+
+${rubric}
+
+Bitte bewerte den Text und antworte IN VIETNAMESE mit folgendem JSON-Format (und NUR das JSON, keine andere Texte):
+{
+  "gesamtpunktzahl": <number 0-${maxPts}>,
+  "teilnoten": {
+    "inhalt": <number 0-${maxPts}>,
+    "register": "<Phù hợp / Phần lớn phù hợp / Không phù hợp>",
+    "wortschatz": "<Đa dạng / Phần lớn phù hợp / Hạn chế>",
+    "strukturen": "<Đa dạng / Phần lớn phù hợp / Hạn chế>",
+    "fehler": "<Ít lỗi / Nhiều lỗi nhưng hiểu được / Nhiều lỗi, ảnh hưởng đến sự hiểu>"
+  },
+  "korrektur": "<Viết lại bài đã sửa lỗi bằng tiếng Đức, in đậm những chỗ sửa bằng **…**>",
+  "kommentar": "<Nhận xét chi tiết bằng tiếng Việt: điểm tốt, lỗi cụ thể (ngữ pháp, từ vựng, chính tả), gợi ý cải thiện. Dùng ví dụ từ bài viết.>",
+  "mustertexte": ["<Bài mẫu 1 bằng tiếng Đức, ~30 từ>","<Bài mẫu 2 bằng tiếng Đức, ~30 từ>"]
+}`;
+
+  try{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{temperature:0.3,maxOutputTokens:2048}
+      })
+    });
+
+    if(!res.ok){const e=await res.text();throw new Error(`API lỗi ${res.status}: ${e}`)}
+
+    const data=await res.json();
+    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+
+    /* parse JSON from response */
+    const jsonMatch=raw.match(/\{[\s\S]*\}/);
+    if(!jsonMatch)throw new Error('Gemini không trả về đúng format');
+
+    const r=JSON.parse(jsonMatch[0]);
+    showResult(r,maxPts);
+  }catch(e){
+    console.error(e);
+    toast('Lỗi: '+(e.message||e));
+  }
+
+  $('submitBtn').disabled=false;
+  $('loading').classList.remove('on');
+  updateSubmit();
+}
+
+function showResult(r,maxPts){
+  const tn=r.teilnoten||{};
+
+  /* Score grid */
+  $('scores').innerHTML=`
+    <div class="score-item" style="grid-column:1/-1;text-align:center">
+      <div class="label">Tổng điểm</div>
+      <div class="val">${r.gesamtpunktzahl} <span class="max">/ ${maxPts}</span></div>
+    </div>
+    <div class="score-item"><div class="label">Nội dung</div><div class="val">${tn.inhalt??'–'} <span class="max">/ ${maxPts}</span></div></div>
+    <div class="score-item"><div class="label">Ngữ vực (Register)</div><div style="font-size:15px;margin-top:6px">${tn.register||'–'}</div></div>
+    <div class="score-item"><div class="label">Từ vựng (Wortschatz)</div><div style="font-size:15px;margin-top:6px">${tn.wortschatz||'–'}</div></div>
+    <div class="score-item"><div class="label">Cấu trúc (Strukturen)</div><div style="font-size:15px;margin-top:6px">${tn.strukturen||'–'}</div></div>
+    <div class="score-item" style="grid-column:1/-1"><div class="label">Lỗi (Fehler)</div><div style="font-size:15px;margin-top:6px">${tn.fehler||'–'}</div></div>`;
+
+  /* Bài sửa */
+  const kor=(r.korrektur||'').replace(/\*\*(.+?)\*\*/g,'<b style="color:var(--gr)">$1</b>');
+  $('corrections').innerHTML=`<b>✏️ Bài đã sửa:</b><br><br>${kor}`;
+
+  /* Nhận xét + bài mẫu */
+  let fb=`<h4>💬 Nhận xét:</h4>${r.kommentar||''}`;
+  if(r.mustertexte&&r.mustertexte.length){
+    fb+=`<h4>📖 Bài mẫu tham khảo:</h4>`;
+    r.mustertexte.forEach((m,i)=>{fb+=`<div style="background:var(--g);border-radius:10px;padding:12px 16px;margin:8px 0;font-style:italic">${i+1}. ${m}</div>`});
+  }
+  $('feedback').innerHTML=fb;
+
+  $('result').classList.add('on','vin');
+  $('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
