@@ -153,7 +153,7 @@ h3{font-size:22px;margin:0 0 18px}
   <!-- Màn hình 1: danh sách đề -->
   <div id="vList">
     <div class="th"><h1>Intensives Schreiben</h1><input class="srch" id="q" placeholder="🔍  Suchen" autocomplete="off"></div>
-    <h3>Schreiben A1</h3>
+    <h3>Schreiben und KI-Korrektur</h3>
     <div class="col" id="prompts"></div>
     <p class="mu" id="noTask" style="display:none">Không có đề nào khớp.</p>
     <p class="mu" style="margin-top:26px"><a href="#" id="keyLink" style="color:var(--mu);display:none">🔑 Đổi API key</a></p>
@@ -311,7 +311,7 @@ function renderPrompts(q){
 
 function selectTask(id){
   curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
-  $('ttl').textContent='Schreiben A1 / '+curTask.title;
+  $('ttl').textContent='Intensives Schreiben / '+curTask.title;
   $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts">${curTask.type} – ${curTask.pts}</span></div>${curTask.desc}<br><small style="color:var(--mu)">${curTask.hint}</small>`;
   $('wreq').textContent=curTask.words;
   $('ans').value='';$('wcount').textContent='0';$('wcount').style.color='';
