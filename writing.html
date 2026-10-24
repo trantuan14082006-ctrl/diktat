@@ -131,7 +131,7 @@ h3{font-size:22px;margin:0 0 18px}
 <header class="hd">
   <a class="logo" href="index.html"><b>D</b>Diktat Dashboard</a>
   <nav>
-    <a href="index.html">Deutschkurs</a>
+    <a href="index.html" class="act">Deutschkurs</a>
     <button type="button" class="tg" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌙</button>
   </nav>
 </header>
@@ -316,6 +316,7 @@ function selectTask(id){
   $('wreq').textContent=curTask.words;
   $('ans').value='';$('wcount').textContent='0';$('wcount').style.color='';
   $('result').classList.remove('on');
+  try{history.state&&history.state.v==='vTask'?history.replaceState({v:'vTask'},''):history.pushState({v:'vTask'},'')}catch(e){}
   show('vTask');
   $('ans').focus({preventScroll:true});
   updateSubmit();
@@ -331,7 +332,10 @@ document.querySelectorAll('.tools [data-c]').forEach(b=>{
     if(a.value.length-(e-s)+c.length>a.maxLength)return;
     a.setRangeText(c,s,e,'end');a.focus();a.dispatchEvent(new Event('input'))}
 });
-$('pback').onclick=()=>show('vList');
+/* Nút Back của trình duyệt / nút ← Zurück: từ màn làm bài về danh sách đề (không thoát khỏi trang) */
+try{history.replaceState({v:'vList'},'')}catch(e){}
+window.addEventListener('popstate',e=>{show(e.state&&e.state.v==='vTask'&&curTask?'vTask':'vList')});
+$('pback').onclick=()=>{if(history.state&&history.state.v==='vTask'){try{history.back();return}catch(e){}}show('vList')};
 
 /* ===== Word counter ===== */
 const countWords=s=>s.trim()?s.trim().split(/\s+/).length:0;
