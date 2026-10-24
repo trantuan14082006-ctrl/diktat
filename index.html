@@ -1271,7 +1271,9 @@ function fbSessionCheck(){
   return false
 }
 setInterval(fbSessionCheck,60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)fbSessionCheck()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)return;fbSessionCheck();
+  /* học viên không có nút đồng bộ: tự cập nhật thư viện khi quay lại trang sau hơn 30 phút */
+  if(fbUser&&!fbIsAdmin()&&!fbSyncing&&Date.now()-fbLastSync>30*60e3)fbSync().then(()=>render())});
 /* học viên phải có hồ sơ trong danh sách do admin tạo (members/{uid}) và chưa bị khoá */
 async function fbMemberOk(u){
   try{const d=await firebase.firestore().collection('members').doc(u.uid).get();
@@ -1411,7 +1413,7 @@ function fbAuthUI(){
     $('empty').textContent=adm?'Chưa có bài nào. Vào "Thêm bài" để bắt đầu.':'Chưa có bài nào trong thư viện.';
     b.classList.remove('hide');b.textContent=fbInitials(fbShownName());b.title=fbShownName();
     b.onclick=e=>{e.stopPropagation();umOpen($('umPop').classList.contains('hide'))};
-    sb.classList.remove('hide');sb.onclick=()=>{if(!fbSyncing)fbSync().then(()=>render())};
+    sb.classList.toggle('hide',!adm);sb.onclick=()=>{if(!fbSyncing)fbSync().then(()=>render())};
     if(!fbSyncing)fbIdle()
   }else{
     if(fastGuardNoUser())return;
@@ -1425,7 +1427,7 @@ function fbAuthUI(){
    LIB_UID = UID tài khoản admin của bạn (Firebase → Authentication → Users → cột "User UID").
    Để trống "" = chưa bật phân quyền: ai đăng nhập cũng như admin (kiểu cũ). */
 const LIB_UID="56DjTRmzRjTaduizB4mhv5bcDC72";
-let FBCFG=null,fbMemName='';
+let FBCFG=null,fbMemName='',fbLastSync=0;
 const fbIsAdmin=()=>!LIB_UID||(!!fbUser&&fbUser.uid===LIB_UID);
 const fbBaseUid=()=>fbIsAdmin()?fbUser.uid:LIB_UID;
 const SESS_MS=24*3600*1000;   /* tự đăng xuất sau 24 giờ */
@@ -1507,7 +1509,7 @@ async function fbSync(){
     st.textContent='☁ Đã đồng bộ ✓ (⬇'+dn+' ⬆'+up+')';
     setTimeout(()=>{if(fbUser)fbIdle()},3000)
   }catch(e){console.error('sync',e);st.textContent='⚠ Lỗi đồng bộ'}
-  finally{fbSyncing=false}
+  finally{fbSyncing=false;fbLastSync=Date.now()}
 }
 /* hook: mỗi lần lưu/xoá bài ở local → cũng đẩy lên cloud */
 const _origPut=put,_origDel=del;
