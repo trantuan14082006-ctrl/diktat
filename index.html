@@ -235,13 +235,13 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
  <div class="col w"><div class="bar" id="bar1"></div>
  <div id="pmain">
   <div class="box"><div class="ov"><div class="bd" id="bd"></div><textarea id="ans" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type what you hear"></textarea></div></div>
-  <div class="cnt" id="cnt"></div>
+  <div class="cnt" id="cnt"></div><div class="mu" id="lmsg" style="margin:4px 0 8px;min-height:20px"></div>
   <div class="btns"><button class="btn b1" id="chk">Check</button><button class="btn b2" id="skip">Next</button></div>
   <div class="tools"><button class="sm" data-c="ä">ä</button><button class="sm" data-c="ö">ö</button><button class="sm" data-c="ü">ü</button><button class="sm" data-c="ß">ß</button><button class="sm" data-c="Ä">Ä</button><button class="sm" data-c="Ö">Ö</button><button class="sm" data-c="Ü">Ü</button><br>
-  <button class="sm" id="prev">← Trước</button><button class="sm" id="reveal">Xem đáp án</button><button class="sm" id="cs">Hoa/thường: không</button><button class="sm on" id="pn">Bỏ dấu câu: có</button>
+  <button class="sm" id="relisten">🔊 Nghe lại</button><button class="sm" id="prev">← Trước</button><button class="sm" id="reveal">Xem đáp án</button><button class="sm" id="cs">Hoa/thường: không</button><button class="sm on" id="pn">Bỏ dấu câu: có</button>
   <div class="mu">Enter = kiểm tra · Ctrl = nghe lại câu</div></div>
  </div>
- <div id="pdone" class="hide"><div class="big" id="sc"></div><p class="mu">Số câu đúng ngay lần đầu.</p><button class="btn b2" id="again">Làm lại</button></div>
+ <div id="pdone" class="hide"><div class="big" id="sc"></div><p class="mu" id="scd">Số câu đúng ngay lần đầu.</p><button class="btn b2" id="again">Làm lại</button></div>
  <div class="row"><button class="sbtn" id="pback">← Quay lại</button></div></div>
 </div>
 
@@ -1144,12 +1144,19 @@ document.addEventListener('keydown',e=>{if(!tapOn)return;
   else if(e.key==='Escape')tapStop('Đã dừng, chưa lưu gì.')});
 document.addEventListener('keyup',e=>{if(tapOn&&e.code==='Space')e.preventDefault()});
 /* listen & type */
-function startPractice(){setAudio(cur.audio);lines=getLines(cur.script);segs=cur.segs;idx=0;good=0;
+const LISTEN_NEED=5;let heard=[];   /* mỗi câu phải nghe đủ 5 lần mới được kiểm tra / sang câu sau */
+function startPractice(){setAudio(cur.audio);lines=getLines(cur.script);segs=cur.segs;idx=0;good=0;heard=new Array(lines.length).fill(0);
   $('ttl').textContent='Advanced Dictation / '+head();$('pdone').classList.add('hide');$('pmain').classList.remove('hide');show('vType');go(0)}
 function go(i){idx=i;tries=0;force=null;greenTok=[];setStale(false);$('ans').readOnly=false;$('ans').value='';paint();
-  if(idx>=lines.length){$('pmain').classList.add('hide');$('pdone').classList.remove('hide');$('sc').textContent=good+' / '+lines.length;return}
-  $('cnt').textContent=`${idx+1}/${lines.length}`;$('ans').focus();replay()}
-function replay(){const s=segs[idx];if(s)playRange(s[0],s[1])}
+  if(idx>=lines.length){$('pmain').classList.add('hide');$('pdone').classList.remove('hide');$('sc').textContent=(lines.length?Math.round(good/lines.length*100):0)+'%';$('scd').textContent=good+' / '+lines.length+' câu đúng ngay lần đầu.';return}
+  $('ans').focus();listenUI();replay()}
+function listenUI(){const h=Math.min(heard[idx]||0,LISTEN_NEED);
+  $('cnt').textContent=`${idx+1}/${lines.length} · Đã nghe ${h}/${LISTEN_NEED}`+(h>=LISTEN_NEED?' ✓':'');
+  const b=$('relisten');if(b)b.textContent=`🔊 Nghe lại (${h}/${LISTEN_NEED})`}
+function listenOk(){const h=heard[idx]||0;
+  if(h>=LISTEN_NEED){$('lmsg').textContent='';return true}
+  $('lmsg').textContent=`Hãy nghe đủ ${LISTEN_NEED} lần rồi mới kiểm tra hoặc sang câu sau (còn ${LISTEN_NEED-h} lần). Bấm "🔊 Nghe lại" hoặc phím Ctrl.`;return false}
+function replay(){const s=segs[idx];if(s){heard[idx]=(heard[idx]||0)+1;$('lmsg').textContent='';listenUI();playRange(s[0],s[1])}}
 function target(i){let t=lines[i];if(pnOn)t=t.replace(/[.,;:!?„“"”»«()\-–—…]/g,'');return t.replace(/\s+/g,' ').trim()}
 const eq=(a,b)=>csOn?a===b:a.toLowerCase()===b.toLowerCase();
 let greenTok=[],stale=false,lastInput='';function setStale(v){stale=v;const t=$('ans');if(t)t.classList.toggle('st',v)} /* từng từ của lần Check gần nhất: true = đúng (xanh) */
@@ -1181,6 +1188,7 @@ function paint(){
   bd.innerHTML=h+(v===''||v.endsWith('\n')?' ':'');bd.scrollTop=ta.scrollTop}
 const cleanAns=v=>{let u=v.replace(/\*/g,'');if(pnOn)u=u.replace(/[.,;:!?„“"”»«()\-–—…]/g,'');return u.replace(/\s+/g,' ').trim()};
 function check(){const ta=$('ans'),raw=stale?lastInput:ta.value,u=cleanAns(raw);if(!u){replay();return}
+  if(!listenOk())return;
   const t=target(idx);tries++;
   if(eq(t,u)){if(tries===1)good++;force='ok';ta.value=lines[idx];ta.readOnly=true;paint();setTimeout(()=>go(idx+1),700)}
   else{force=null;lastInput=raw;ta.value=mask(t,u);const p=ta.value.indexOf('*');paint();ta.focus();if(p>=0)ta.setSelectionRange(p,p);setStale(true)}}
@@ -1197,8 +1205,8 @@ function clearWrong(){if(!stale||force)return;setStale(false);const ta=$('ans');
 $('ans').addEventListener('click',clearWrong);$('ans').addEventListener('focus',clearWrong);
 $('ans').addEventListener('scroll',()=>{$('bd').scrollTop=$('ans').scrollTop});
 document.addEventListener('keydown',e=>{if(e.key==='Control'&&!e.repeat&&!$('vType').classList.contains('hide')&&idx<lines.length){e.preventDefault();replay()}});
-$('chk').onclick=check;$('skip').onclick=()=>go(idx+1);$('prev').onclick=()=>{if(idx>0)go(idx-1)};
-$('reveal').onclick=()=>{tries=2;greenTok=[];setStale(false);force='no';$('ans').value=lines[idx];paint();$('ans').focus()};
+$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};$('relisten').onclick=()=>{replay();$('ans').focus()};$('prev').onclick=()=>{if(idx>0)go(idx-1)};
+$('reveal').onclick=()=>{if(!listenOk())return;tries=2;greenTok=[];setStale(false);force='no';$('ans').value=lines[idx];paint();$('ans').focus()};
 $('cs').onclick=e=>{csOn=!csOn;e.target.classList.toggle('on',csOn);e.target.textContent='Hoa/thường: '+(csOn?'có':'không');paint()};
 $('pn').onclick=e=>{pnOn=!pnOn;e.target.classList.toggle('on',pnOn);e.target.textContent='Bỏ dấu câu: '+(pnOn?'có':'không');paint()};
 $('again').onclick=startPractice;$('pback').onclick=()=>show('vMode');
@@ -1413,7 +1421,7 @@ function fbAuthUI(){
     $('empty').textContent=adm?'Chưa có bài nào. Vào "Thêm bài" để bắt đầu.':'Chưa có bài nào trong thư viện.';
     b.classList.remove('hide');b.textContent=fbInitials(fbShownName());b.title=fbShownName();
     b.onclick=e=>{e.stopPropagation();umOpen($('umPop').classList.contains('hide'))};
-    sb.classList.toggle('hide',!adm);sb.onclick=()=>{if(!fbSyncing)fbSync().then(()=>render())};
+    sb.classList.toggle('hide',!adm);sb.onclick=()=>{if(!fbSyncing)fbSync(true).then(()=>render())};
     if(!fbSyncing)fbIdle()
   }else{
     if(fastGuardNoUser())return;
@@ -1476,39 +1484,38 @@ async function fbGetAudio(id){
     const mime=ds[0].type||EXTM[ds[0].ext]||'audio/mpeg';
     return new Blob(ds.map(d=>d.data.toUint8Array()),{type:mime})}catch(e){console.warn('fb audio',e);return null}
 }
-async function fbSyncLib(){
-  const st=$('fbStatus');
+async function fbSyncLib(say){
   const snap=await fbCol().get({source:'server'});   /* lỗi mạng → ném lỗi, không xoá nhầm bài đang có */
   const cl=snap.docs.map(d=>{const it=d.data();if(it.segs)it.segs=segsFromFb(it.segs);return it});
   const lo=await all(),loM=new Map(lo.map(l=>[l.id,l])),clId=new Set(cl.map(c=>c.id));
   const sig=l=>JSON.stringify([l.title,l.book||'',l.sub||'',l.script||'',l.trans||'',l.segs||null]);
   let dn=0,up=0,rm=0;
   for(const c of cl){const l0=loM.get(c.id);
-    if(!l0){st.textContent='⬇ Tải bài '+(dn+1)+'/'+cl.length+'…';
+    if(!l0){say('⬇ Tải bài '+(dn+1)+'/'+cl.length+'…');
       const au=await fbGetAudio(c.id);if(!au){console.warn('thiếu audio',c.id);continue}
       await _origPut({...c,audio:au},true);dn++}
     else if(sig(l0)!==sig(c)){await _origPut({...l0,...c},false);up++}}
   for(const l of lo){if(!clId.has(l.id)){await _origDel(l.id);rm++}}
   return{dn,up,rm}
 }
-async function fbSync(){
+async function fbSync(manual){
   if(!fbUser||!fbOk()||fbSyncing||!db)return;
-  fbSyncing=true;const st=$('fbStatus');
-  try{st.textContent='🔄 Đang đồng bộ…';st.classList.remove('hide');
-    if(!fbIsAdmin()){const r=await fbSyncLib();st.textContent='☁ Đã cập nhật ✓ (⬇'+r.dn+')';setTimeout(()=>{if(fbUser)fbIdle()},3000);return}
+  fbSyncing=true;const st=$('fbStatus'),say=t=>{if(manual){st.textContent=t;st.classList.remove('hide')}};   /* đồng bộ tự động thì im lặng, chỉ hiện chữ khi admin bấm 🔄 */
+  try{say('🔄 Đang đồng bộ…');
+    if(!fbIsAdmin()){const r=await fbSyncLib(say);say('☁ Đã cập nhật ✓ (⬇'+r.dn+')');setTimeout(()=>{if(fbUser)fbIdle()},3000);return}
     const[lo,cl]=await Promise.all([all(),fbAllItems()]);
     const loId=new Set(lo.map(l=>l.id)),clId=new Set(cl.map(l=>l.id));
     let dn=0,up=0;
     for(const c of cl){if(!loId.has(c.id)){
-      st.textContent='⬇ Tải bài '+(++dn)+'…';
+      say('⬇ Tải bài '+(++dn)+'…');
       const au=await fbGetAudio(c.id),l={...c};if(au)l.audio=au;
       await _origPut(l,!!au)}}
     for(const l of lo){if(!clId.has(l.id)){
-      st.textContent='⬆ Đẩy bài '+(++up)+'…';
+      say('⬆ Đẩy bài '+(++up)+'…');
       const au=await getAudio(l.id);await fbPut(l,au)}}
-    st.textContent='☁ Đã đồng bộ ✓ (⬇'+dn+' ⬆'+up+')';
+    say('☁ Đã đồng bộ ✓ (⬇'+dn+' ⬆'+up+')');
     setTimeout(()=>{if(fbUser)fbIdle()},3000)
-  }catch(e){console.error('sync',e);st.textContent='⚠ Lỗi đồng bộ'}
+  }catch(e){console.error('sync',e);st.textContent='⚠ Lỗi đồng bộ';st.classList.remove('hide')}
   finally{fbSyncing=false;fbLastSync=Date.now()}
 }
 /* hook: mỗi lần lưu/xoá bài ở local → cũng đẩy lên cloud */
