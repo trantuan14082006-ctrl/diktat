@@ -1458,8 +1458,8 @@ function fbInit(){
     console.log('[auth]',u?('đã đăng nhập: '+(u.email||u.uid)):'chưa đăng nhập');
     if(u&&LIB_UID&&u.uid!==LIB_UID&&!(await fbMemberOk(u))){await firebase.auth().signOut();return}   /* signOut gọi lại hàm này với u=null */
     fbUser=u;if(u&&fbSessionCheck())return;fbAuthUI();
+    if(u&&db)await navRestore();   /* mở lại đúng chỗ ngay từ dữ liệu trong máy, KHÔNG chờ đồng bộ cloud */
     if(u&&db){try{await fbSync();render()}catch(e){console.error('sync',e)}}
-    if(u&&db)await navRestore();
     if(u)fastAfterLogin();
   },e=>{console.warn('authState',e.code,e.message);gate('Lỗi khi kiểm tra đăng nhập.',{text:'🔄 Tải lại',fn:()=>location.reload()})});
 }
@@ -1568,8 +1568,8 @@ async function fbSyncLib(say){
 async function fbSync(manual){
   if(!fbUser||!fbOk()||fbSyncing||!db)return;
   fbSyncing=true;const st=$('fbStatus'),say=t=>{if(manual){st.textContent=t;st.classList.remove('hide')}};   /* đồng bộ tự động thì im lặng, chỉ hiện chữ khi admin bấm 🔄 */
-  try{say('🔄 Syncing…');
-    if(!fbIsAdmin()){const r=await fbSyncLib(say);say('☁ Updated ✓ (⬇'+r.dn+')');setTimeout(()=>{if(fbUser)fbIdle()},3000);return}
+  try{say('🔄 Đang đồng bộ…');
+    if(!fbIsAdmin()){const r=await fbSyncLib(say);say('☁ Đã cập nhật ✓ (⬇'+r.dn+')');setTimeout(()=>{if(fbUser)fbIdle()},3000);return}
     const[lo,cl]=await Promise.all([all(),fbAllItems()]);
     const loId=new Set(lo.map(l=>l.id)),clId=new Set(cl.map(l=>l.id));
     let dn=0,up=0;
@@ -1580,7 +1580,7 @@ async function fbSync(manual){
     for(const l of lo){if(!clId.has(l.id)){
       say('⬆ Đang tải lên bài '+(++up)+'…');
       const au=await getAudio(l.id);await fbPut(l,au)}}
-    say('☁ Synced ✓ (⬇'+dn+' ⬆'+up+')');
+    say('☁ Đã đồng bộ ✓ (⬇'+dn+' ⬆'+up+')');
     setTimeout(()=>{if(fbUser)fbIdle()},3000)
   }catch(e){console.error('sync',e);st.textContent='⚠ Lỗi đồng bộ';st.classList.remove('hide')}
   finally{fbSyncing=false;fbLastSync=Date.now()}
