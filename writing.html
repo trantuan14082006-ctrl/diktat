@@ -269,6 +269,7 @@ if(typeof firebase!=='undefined'){
       fbUser=u;
       if(sessExpired()){firebase.auth().signOut();toLogin('Phiên đăng nhập đã hết hạn (24 giờ). Vui lòng đăng nhập lại.');return}
       fbAvatar();                                                /* hiện avatar ngay, tên đầy đủ cập nhật sau */
+      loadCustomTasks();                                         /* đề do admin thêm ở trang Thêm bài */
       if(u.uid!==LIB_UID){
         try{const d=await firebase.firestore().collection('members').doc(u.uid).get();
           if(d.exists){const m=d.data();if(m.disabled===true){firebase.auth().signOut();toLogin('Tài khoản này đã bị khoá.');return}fbMemName=m.name||m.username||'';fbAvatar()}}
@@ -345,29 +346,55 @@ const TASKS=[
 
 let curTask=null;
 
+/* ===== Đề do admin thêm (Firestore: users/{admin}/writingTasks) – gộp vào TASKS ===== */
+const LEVELS=['A1','A2','B1','B2','C1','C2'];
+const TYPE_NAME={'1A':'Viết thư / E-Mail','1B':'Viết đoạn văn'};
+const fmtDesc=(raw,words)=>esc(raw).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')+`<br><br>Viết khoảng <b>${words} từ</b>.`;
+function applyCustom(list){
+  for(let i=TASKS.length-1;i>=0;i--)if(TASKS[i].custom)TASKS.splice(i,1);
+  (list||[]).filter(t=>t&&t.id&&t.title&&t.aufgabe).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).forEach(t=>{
+    const ty=t.type==='1B'?'1B':'1A',wd=+t.words||30;
+    TASKS.push({id:String(t.id),type:ty,level:LEVELS.includes(t.level)?t.level:'A1',title:String(t.title),pts:t.pts||(ty==='1B'?'2.5 Điểm':'5 Điểm'),words:wd,
+      desc:fmtDesc(t.descRaw||'',wd),hint:t.hint||'',aufgabe:String(t.aufgabe),custom:true})})
+}
+try{applyCustom(JSON.parse(localStorage.getItem('wTasksCache')||'[]'))}catch(e){}   /* hiện ngay đề đã tải lần trước */
+async function loadCustomTasks(){
+  try{
+    const snap=await firebase.firestore().collection('users').doc(LIB_UID).collection('writingTasks').get();
+    const list=snap.docs.map(d=>d.data());
+    try{localStorage.setItem('wTasksCache',JSON.stringify(list))}catch(e){}
+    applyCustom(list);
+    if(!$('vList').classList.contains('hide'))renderPrompts($('q').value)
+  }catch(e){console.warn('writingTasks',e.code||e)}
+}
+
 /* ===== Chuyển màn hình ===== */
 const VIEWS=['vList','vTask'];
 function show(v){VIEWS.forEach(i=>$(i).classList.toggle('hide',i!==v));const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin');window.scrollTo({top:0})}
 
+const openG=new Set();   /* nhóm đang mở (về danh sách thì xoá hết => thu gọn) */
 function renderPrompts(q){
   q=(q||'').trim().toLowerCase();
-  const groups=[{type:'1A',name:'1A – Viết thư / E-Mail'},{type:'1B',name:'1B – Viết đoạn văn'}];
+  const keys=[];TASKS.forEach(t=>{const k=(t.level||'A1')+'|'+t.type;if(!keys.includes(k))keys.push(k)});
+  keys.sort((a,b)=>{const[la,ta]=a.split('|'),[lb,tb]=b.split('|');return LEVELS.indexOf(la)-LEVELS.indexOf(lb)||ta.localeCompare(tb)});
   const c=$('prompts');
-  const html=groups.map(g=>{
-    const list=TASKS.filter(t=>t.type===g.type&&(!q||(t.title+' '+t.hint+' '+g.name).toLowerCase().includes(q)));
+  const html=keys.map(k=>{
+    const[lv,ty]=k.split('|'),name=`${lv} · ${ty} – ${TYPE_NAME[ty]||ty}`;
+    const list=TASKS.filter(t=>(t.level||'A1')===lv&&t.type===ty&&(!q||(t.title+' '+(t.hint||'')+' '+name).toLowerCase().includes(q)));
     if(!list.length)return '';
-    return `<div class="acc${q?' open':''}"><div class="ah" role="button" tabindex="0"><em class="nm">${g.name}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${list.map(t=>`<div class="pill" role="button" tabindex="0" data-id="${t.id}">${t.title}<small>${t.pts} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`;
+    return `<div class="acc${q||openG.has(k)?' open':''}" data-k="${k}"><div class="ah" role="button" tabindex="0"><em class="nm">${esc(name)}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${list.map(t=>`<div class="pill" role="button" tabindex="0" data-id="${esc(t.id)}">${esc(t.title)}<small>${esc(t.pts)} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`;
   }).join('');
   c.innerHTML=html;
   $('noTask').style.display=html?'none':'block';
-  c.onclick=e=>{const p=e.target.closest('.pill');if(p){selectTask(p.dataset.id);return}const h=e.target.closest('.ah');if(h)h.parentElement.classList.toggle('open')};
+  c.onclick=e=>{const p=e.target.closest('.pill');if(p){selectTask(p.dataset.id);return}
+    const h=e.target.closest('.ah');if(h){const a=h.parentElement,on=a.classList.toggle('open');on?openG.add(a.dataset.k):openG.delete(a.dataset.k)}};
   c.onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest('.pill,.ah');if(!t)return;e.preventDefault();t.click()};
 }
 
 function selectTask(id){
   curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
   $('ttl').textContent='Intensives Schreiben / '+curTask.title;
-  $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts">${curTask.type} – ${curTask.pts}</span></div>${curTask.desc}<br><small style="color:var(--mu)">${curTask.hint}</small>`;
+  $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts">${esc(curTask.level||'A1')} · ${curTask.type} – ${esc(curTask.pts)}</span></div>${curTask.desc}${curTask.hint?`<br><small style="color:var(--mu)">${esc(curTask.hint)}</small>`:''}`;
   $('wreq').textContent=curTask.words;
   $('ans').value='';$('wcount').textContent='0';$('wcount').style.color='';
   $('result').classList.remove('on');
@@ -389,7 +416,7 @@ document.querySelectorAll('.tools [data-c]').forEach(b=>{
 });
 /* Nút Back của trình duyệt / nút ← Zurück: từ màn làm bài về danh sách đề (không thoát khỏi trang) */
 try{history.replaceState({v:'vList'},'')}catch(e){}
-function toList(){renderPrompts($('q').value);show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
+function toList(){openG.clear();renderPrompts($('q').value);show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
 window.addEventListener('popstate',e=>{if(e.state&&e.state.v==='vTask'&&curTask)show('vTask');else toList()});
 window.addEventListener('pageshow',e=>{if(e.persisted&&!$('vList').classList.contains('hide'))toList()});
 $('pback').onclick=()=>{if(history.state&&history.state.v==='vTask'){try{history.back();return}catch(e){}}toList()};

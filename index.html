@@ -306,7 +306,19 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
  <div class="th"><h1>Thêm bài mới</h1></div>
  <div class="sktab" id="skTab" role="tablist"><button type="button" role="tab" data-sk="read" class=""><img alt="" data-from="read">Lesen</button><button type="button" role="tab" data-sk="write" class=""><img alt="" data-from="write">Schreiben</button><button type="button" role="tab" data-sk="speak" class=""><img alt="" data-from="speak">Sprechen</button><button type="button" role="tab" data-sk="listen" class="on"><img alt="" data-from="listen">Hören</button></div>
 <div class="card skph hide" id="add_read"><img alt="" data-from="read"><div><h3>Intensives Lesen</h3><p class="mu" style="margin:0">Sắp ra mắt</p></div></div>
-<div class="card skph hide" id="add_write"><img alt="" data-from="write"><div><h3>Intensives Schreiben</h3><p class="mu" style="margin:0 0 12px">Chọn đề 1A/1B, viết bài và nhờ Gemini chấm. Mỗi người dán API key Gemini miễn phí của mình trong trang luyện viết.</p><a class="btn b2" href="writing.html" style="display:inline-block;text-decoration:none">Mở trang luyện viết →</a></div></div>
+<div class="card hide" id="add_write">
+  <label>Trình độ</label><select id="wtLevel" class="wmsel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
+  <label>Dạng bài <span class="mu">(quyết định thang điểm khi chấm)</span></label><select id="wtType" class="wmsel"><option value="1A">1A – Viết thư / E-Mail (5 điểm)</option><option value="1B">1B – Viết đoạn văn (2,5 điểm)</option></select>
+  <label>Tên đề <span class="mu">(tiếng Đức)</span></label><input type="text" id="wtTitle" placeholder="vd. Einladung zur Party">
+  <label>Mô tả đề bài cho học viên <span class="mu">(tiếng Việt – mỗi dòng một dòng, dùng **chữ** để in đậm; dòng “Viết khoảng … từ” được tự thêm)</span></label>
+  <textarea id="wtDesc" placeholder="**Bạn muốn mời bạn đến bữa tiệc sinh nhật.**&#10;Viết một E-Mail cho bạn. Hãy viết về 3 điểm sau:&#10;• **Wann?** – Bữa tiệc khi nào?&#10;• **Wo?** – Ở đâu?"></textarea>
+  <label>Đề bài bằng tiếng Đức <span class="mu">(gửi cho Gemini để biết đề mà chấm)</span></label>
+  <textarea id="wtAufgabe" placeholder="Schreibe eine E-Mail an deinen Freund. Lade ihn zu deiner Geburtstagsparty ein. Schreibe über: Wann? Wo? Was mitbringen?"></textarea>
+  <label>Gợi ý tình huống <span class="mu">(không bắt buộc)</span></label><input type="text" id="wtHint" placeholder="vd. Tình huống: Viết cho bạn bè (informell, du)">
+  <label>Số từ yêu cầu</label><input type="number" id="wtWords" value="30" min="10" max="500">
+  <div class="row"><button class="sbtn p" id="wtSave">Lưu đề</button><button class="sbtn hide" id="wtCancel">Huỷ sửa</button><a class="sbtn" href="writing.html" style="text-decoration:none">Mở trang luyện viết →</a><span class="mu" id="wtMsg"></span></div>
+  <h3 style="margin-top:26px">Các đề đã thêm</h3><div id="wtList" class="mu">Đang tải…</div>
+</div>
 <div class="card skph hide" id="add_speak"><img alt="" data-from="speak"><div><h3>Intensives Sprechen</h3><p class="mu" style="margin:0">Sắp ra mắt</p></div></div>
 <div class="card" id="add_listen">
   <label>Sách / khoá học</label><input type="text" id="book" placeholder="vd. Netzwerk A1">
@@ -1636,8 +1648,48 @@ openDB().then(d=>{db=d;render();fbInit()});
   document.querySelectorAll('.cc .cimg').forEach(()=>{});
   tb.onclick=e=>{const b=e.target.closest('button[data-sk]');if(!b)return;
     tb.querySelectorAll('button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',x===b)});
-    ['read','write','speak','listen'].forEach(k=>document.getElementById('add_'+k).classList.toggle('hide',k!==b.dataset.sk))};
+    ['read','write','speak','listen'].forEach(k=>document.getElementById('add_'+k).classList.toggle('hide',k!==b.dataset.sk))
+    if(b.dataset.sk==='write')wtRender()};
 })();
+
+/* ===== Thêm đề Schreiben (chỉ admin) – lưu ở Firestore: users/{admin}/writingTasks, học viên đọc được ===== */
+const WT=()=>firebase.firestore().collection('users').doc(fbBaseUid()).collection('writingTasks');
+let wtEdit=null,wtItems=[];
+const wtPts=t=>t==='1B'?'2.5 Điểm':'5 Điểm';
+function wtMsg(t,bad){const e=$('wtMsg');e.textContent=t||'';e.style.color=bad?'var(--bad)':''}
+function wtErr(e){console.warn('writingTasks',e);
+  wtMsg(e&&e.code==='permission-denied'?'Firestore chưa cho phép đọc/ghi đề viết: cần thêm quy tắc cho users/{uid}/writingTasks.':'Lỗi: '+((e&&e.message)||e),true)}
+function wtReset(){wtEdit=null;['wtTitle','wtDesc','wtAufgabe','wtHint'].forEach(i=>$(i).value='');$('wtWords').value=30;$('wtSave').textContent='Lưu đề';$('wtCancel').classList.add('hide')}
+async function wtRender(){
+  const box=$('wtList');
+  if(!fbUser||!fbOk()){box.textContent='Chưa đăng nhập.';return}
+  try{const snap=await WT().get();
+    wtItems=snap.docs.map(d=>d.data()).sort((a,b)=>String(a.level||'').localeCompare(String(b.level||''))||String(a.type||'').localeCompare(String(b.type||''))||(a.createdAt||0)-(b.createdAt||0))}
+  catch(e){wtErr(e);box.textContent='';return}
+  box.innerHTML=wtItems.length?wtItems.map(t=>`<div class="accrow"><div class="n"><b>${esc(t.title)}</b><small>${esc(t.level||'A1')} · ${esc(t.type)} · ~${+t.words||30} từ</small></div><button class="sm" data-a="ed" data-id="${esc(t.id)}">✎ Sửa</button><button class="sm" data-a="rm" data-id="${esc(t.id)}">Xoá</button></div>`).join('')
+    :'Chưa có đề nào do bạn thêm. (Các đề A1 có sẵn trong trang luyện viết không nằm trong danh sách này.)'}
+$('wtSave').onclick=async()=>{
+  if(!fbUser||!fbOk()){wtMsg('Chưa đăng nhập.',true);return}
+  const title=$('wtTitle').value.trim(),descRaw=$('wtDesc').value.trim();let aufgabe=$('wtAufgabe').value.trim();
+  const words=Math.max(10,Math.min(500,parseInt($('wtWords').value)||30));
+  if(!title||!descRaw||!aufgabe){wtMsg('Hãy nhập đủ: tên đề, mô tả cho học viên và đề bài tiếng Đức.',true);return}
+  if(!/\d+\s*Wörter/i.test(aufgabe))aufgabe+=' Schreibe ca. '+words+' Wörter.';
+  const type=$('wtType').value,level=$('wtLevel').value,id=wtEdit||('w'+Date.now()),old=wtItems.find(x=>x.id===id);
+  const doc={id,type,level,title,pts:wtPts(type),words,descRaw,hint:$('wtHint').value.trim(),aufgabe,createdAt:(old&&old.createdAt)||Date.now()};
+  $('wtSave').disabled=true;wtMsg('Đang lưu…');
+  try{await WT().doc(id).set(doc);wtReset();wtMsg('✓ Đã lưu đề “'+title+'”');await wtRender()}
+  catch(e){wtErr(e)}
+  $('wtSave').disabled=false};
+$('wtCancel').onclick=()=>{wtReset();wtMsg('')};
+$('wtList').onclick=async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const t=wtItems.find(x=>x.id===b.dataset.id);if(!t)return;
+  if(b.dataset.a==='ed'){
+    wtEdit=t.id;$('wtLevel').value=t.level||'A1';$('wtType').value=t.type;$('wtTitle').value=t.title||'';$('wtDesc').value=t.descRaw||'';
+    $('wtAufgabe').value=String(t.aufgabe||'').replace(/\s*Schreibe ca\.\s*\d+\s*Wörter\.?\s*$/,'');$('wtHint').value=t.hint||'';$('wtWords').value=t.words||30;
+    $('wtSave').textContent='Cập nhật đề';$('wtCancel').classList.remove('hide');wtMsg('Đang sửa đề “'+t.title+'”');$('wtLevel').scrollIntoView({behavior:'smooth',block:'center'})}
+  else if(b.dataset.a==='rm'){
+    if(!confirm('Xoá đề “'+t.title+'”?'))return;
+    try{await WT().doc(t.id).delete();if(wtEdit===t.id)wtReset();wtMsg('Đã xoá.');await wtRender()}catch(er){wtErr(er)}}};
 (function(){document.querySelectorAll('img[data-from]').forEach(i=>{const c=document.querySelector('.cc.'+i.dataset.from+' .cimg');if(c)i.src=c.src})})();
 (function(){const hc=navigator.hardwareConcurrency||4;let n=1,why='fast mode off';
   if(self.crossOriginIsolated){const w=wThreadsPick();n=w>0?w:Math.max(1,Math.min(4,hc-1));why='fast mode on'}
