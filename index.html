@@ -522,10 +522,17 @@ function show(v){V.forEach(i=>$(i).classList.toggle('hide',i!==v));{const el=$(v
     if(L>c){for(let k=c+1;k<=L;k++)history.pushState({in:k},'')}
     else if(L<c){progNav=true;setTimeout(()=>{progNav=false},400);history.go(L-c)}}}catch(e){}}
 /* cấp trang: 0 = 4 ô kỹ năng · 1 = danh sách bài / thêm bài / sao lưu / tài khoản · 2 = trong một bài */
-const LVL=v=>v==='vCourses'?0:(v==='vHome'||v==='vAdd'||v==='vBk'||v==='vAcc')?1:2;
+const LVL=v=>v==='vCourses'?0:(v==='vHome'||v==='vAdd'||v==='vBk'||v==='vAcc')?1:(v==='vMode')?2:3;   /* 3 = đang làm bài (gõ / đọc / sửa) */
+let lastL3='vType';
 let fromPop=false,progNav=false;
 try{if(!(history.state&&history.state.in>0))history.replaceState({in:0},'')}catch(e){}   /* tải lại trang: giữ nguyên cấp lịch sử cũ để nút Lùi/Tiến không bị lặp */
-window.addEventListener('popstate',()=>{if(progNav){progNav=false;return}const c=(history.state&&history.state.in)||0;fromPop=true;if(c===0)show('vCourses');else{render();show('vHome')}fromPop=false});
+window.addEventListener('popstate',()=>{if(progNav){progNav=false;return}const c=(history.state&&history.state.in)||0;fromPop=true;
+  try{if(c===0)show('vCourses');
+  else if(c===1)show('vHome');            /* không render lại: giữ nguyên nhóm/bài đang chọn */
+  else if(c===2)show(cur?'vMode':'vHome');
+  else if(cur){if(lastL3==='vRead')startRead();else if(lastL3==='vEdit')openEditor();else startPractice()}
+  else show('vHome')}catch(e){console.warn('popstate',e)}
+  fromPop=false});
 $('nHome').onclick=()=>{collapseAll();show('vCourses')};document.querySelector('.logo').onclick=()=>{collapseAll();show('vCourses')};
 $('ccListen').onclick=()=>{render();show('vHome')};
 let toastT=0;function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),2200)}
@@ -1587,7 +1594,7 @@ del=id=>_origDel(id).then(()=>{if(fbUser&&!fbSyncing&&fbIsAdmin())fbDel(id).catc
 /* ===== nhớ vị trí: tải lại trang vẫn ở đúng trang / bài / câu đang làm (kể cả chữ đang gõ) ===== */
 let navV='vCourses',navBusy=false,navDone=false;
 const _show0=show,_go0=go,_drawR0=drawR;
-show=function(v){_show0(v);navV=v;navSave()};
+show=function(v){_show0(v);navV=v;if(LVL(v)===3)lastL3=v;navSave()};
 go=function(i){_go0(i);navSave()};
 drawR=function(i){_drawR0(i);navSave()};
 function navSave(){if(navBusy||!navDone)return;try{
