@@ -106,6 +106,18 @@ h3{font-size:22px;margin:0 0 18px}
 #toast.on{opacity:1;transform:translateX(-50%)}
 :focus-visible{outline:2px solid var(--gr);outline-offset:2px;border-radius:8px}
 
+/* Avatar thành viên + menu (giống index) */
+.fb-bar{display:flex;align-items:center;gap:6px;margin-left:8px}
+.um{position:relative}
+.um-av{width:40px;height:40px;border-radius:50%;border:0;background:var(--yl);color:#14181f;font:700 15px system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0;transition:transform .15s,box-shadow .2s}
+.um-av:hover{transform:scale(1.06)}.um-av:focus-visible{outline:3px solid var(--yl2)}
+.um-pop{position:absolute;right:0;top:calc(100% + 12px);min-width:300px;max-width:92vw;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px 0;z-index:300}
+.um-n{padding:14px 20px 6px;font-weight:700;font-size:16px;overflow-wrap:anywhere}
+.um-s{white-space:nowrap;padding:6px 20px 14px;color:var(--mu);font-size:13px;border-bottom:1px dashed var(--bd)}
+.um-o{display:block;width:100%;text-align:left;padding:13px 20px;border:0;background:none;color:var(--tx);font:16px system-ui,sans-serif;cursor:pointer}
+.um-o:hover{background:var(--g)}
+@media(max-width:700px){.fb-bar{margin-left:0}}
+
 /* Dark mode */
 :root[data-theme=dark]{color-scheme:dark;
 --bg:#16181d;--g:#22262d;--gr:#d4a017;--tx:#e8eaee;--mu:#98a1ad;--bd:#383e48;--sel:#4a3d12;--bad:#ff8272;--sh:0 2px 12px rgba(0,0,0,.55);--yl:#e0ac1a;--yl2:#3a3110}
@@ -122,6 +134,7 @@ h3{font-size:22px;margin:0 0 18px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -133,6 +146,7 @@ h3{font-size:22px;margin:0 0 18px}
   <nav>
     <a href="index.html" class="act">Deutschkurs</a>
     <button type="button" class="tg" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌙</button>
+    <div class="fb-bar"><div class="um"><button type="button" class="um-av hide" id="fbAuth" aria-haspopup="true" aria-expanded="false"></button><div class="um-pop hide" id="umPop" role="menu"><div class="um-n" id="umName"></div><div class="um-s" id="umSess"></div><button type="button" class="um-o" id="umOut" role="menuitem">Đăng xuất</button></div></div></div>
   </nav>
 </header>
 
@@ -223,6 +237,46 @@ if(PROXY_URL){
     firebase.initializeApp({apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",authDomain:"diktat-dashboard.firebaseapp.com",projectId:"diktat-dashboard",appId:"1:579828825281:web:6e764c41808673a7642840"});
     firebase.auth().onAuthStateChanged(u=>{fbUser=u;$('loginNote').style.display=u?'none':'block';updateSubmit()});
   }catch(e){console.warn('fb init',e)}
+}
+
+
+/* ===== Đăng nhập dùng chung với trang chính (cùng tài khoản Firebase) ===== */
+const FB_CFG={apiKey:"AIzaSyAgLQfNm10c-iAiQ942r-X3X9aPA4sfdhk",authDomain:"diktat-dashboard.firebaseapp.com",projectId:"diktat-dashboard",storageBucket:"diktat-dashboard.firebasestorage.app",messagingSenderId:"579828825281",appId:"1:579828825281:web:6e764c41808673a7642840"};
+const FB_DOM='@diktat.web',LIB_UID="56DjTRmzRjTaduizB4mhv5bcDC72",SESS_MS=24*3600*1000;
+let fbMemName='',umTimer=0;
+const fbShownName=()=>fbMemName||(fbUser&&fbUser.displayName)||((fbUser&&fbUser.email)||'').replace(FB_DOM,'');
+function fbInitials(n){n=(n||'').trim();if(!n)return'?';const w=n.split(/\s+/);return(w.length>1?w[0][0]+w[w.length-1][0]:n.slice(0,2)).toUpperCase()}
+function umLeft(){
+  if(!fbUser||!fbUser.metadata)return'';const t=Date.parse(fbUser.metadata.lastSignInTime);if(!t)return'';
+  const ms=t+SESS_MS-Date.now();if(ms<=0)return'Session expired';
+  const h=Math.floor(ms/3.6e6),m=Math.floor(ms%3.6e6/6e4),sc=Math.floor(ms%6e4/1e3),p=n=>String(n).padStart(2,'0');
+  return'Thời gian phiên còn lại: '+h+'h '+p(m)+'m '+p(sc)+'s'}
+function umOpen(on){
+  const pop=$('umPop');pop.classList.toggle('hide',!on);$('fbAuth').setAttribute('aria-expanded',on?'true':'false');clearInterval(umTimer);
+  if(on){$('umName').textContent=fbShownName();const tick=()=>{$('umSess').textContent=umLeft()};tick();umTimer=setInterval(tick,1000)}}
+document.addEventListener('click',e=>{if(!e.target.closest('.um'))umOpen(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')umOpen(false)});
+$('umOut').onclick=()=>{umOpen(false);firebase.auth().signOut()};
+function toLogin(note){try{if(note)localStorage.setItem('gateNote',note)}catch(e){}location.replace('index.html')}
+function sessExpired(){const t=fbUser&&fbUser.metadata?Date.parse(fbUser.metadata.lastSignInTime):0;return !!t&&Date.now()-t>SESS_MS}
+function fbAvatar(){const b=$('fbAuth');b.classList.remove('hide');b.textContent=fbInitials(fbShownName());b.title=fbShownName();b.onclick=e=>{e.stopPropagation();umOpen($('umPop').classList.contains('hide'))}}
+if(typeof firebase!=='undefined'){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(FB_CFG);
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+    firebase.auth().onAuthStateChanged(async u=>{
+      if(!u){toLogin();return}                                   /* chưa đăng nhập => về trang chính để đăng nhập */
+      fbUser=u;
+      if(sessExpired()){firebase.auth().signOut();toLogin('Phiên đăng nhập đã hết hạn (24 giờ). Vui lòng đăng nhập lại.');return}
+      fbAvatar();                                                /* hiện avatar ngay, tên đầy đủ cập nhật sau */
+      if(u.uid!==LIB_UID){
+        try{const d=await firebase.firestore().collection('members').doc(u.uid).get();
+          if(d.exists){const m=d.data();if(m.disabled===true){firebase.auth().signOut();toLogin('Tài khoản này đã bị khoá.');return}fbMemName=m.name||m.username||'';fbAvatar()}}
+        catch(e){console.warn('member',e.code)}
+      }
+    });
+    setInterval(()=>{if(fbUser&&sessExpired()){firebase.auth().signOut();toLogin('Phiên đăng nhập đã hết hạn (24 giờ). Vui lòng đăng nhập lại.')}},60000);
+  }catch(e){console.warn('fb auth',e)}
 }
 
 /* ===== API Key ===== */
@@ -335,8 +389,10 @@ document.querySelectorAll('.tools [data-c]').forEach(b=>{
 });
 /* Nút Back của trình duyệt / nút ← Zurück: từ màn làm bài về danh sách đề (không thoát khỏi trang) */
 try{history.replaceState({v:'vList'},'')}catch(e){}
-window.addEventListener('popstate',e=>{show(e.state&&e.state.v==='vTask'&&curTask?'vTask':'vList')});
-$('pback').onclick=()=>{if(history.state&&history.state.v==='vTask'){try{history.back();return}catch(e){}}show('vList')};
+function toList(){renderPrompts($('q').value);show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
+window.addEventListener('popstate',e=>{if(e.state&&e.state.v==='vTask'&&curTask)show('vTask');else toList()});
+window.addEventListener('pageshow',e=>{if(e.persisted&&!$('vList').classList.contains('hide'))toList()});
+$('pback').onclick=()=>{if(history.state&&history.state.v==='vTask'){try{history.back();return}catch(e){}}toList()};
 
 /* ===== Word counter ===== */
 const countWords=s=>s.trim()?s.trim().split(/\s+/).length:0;
