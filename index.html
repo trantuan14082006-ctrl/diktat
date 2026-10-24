@@ -524,7 +524,7 @@ function show(v){V.forEach(i=>$(i).classList.toggle('hide',i!==v));{const el=$(v
 /* cấp trang: 0 = 4 ô kỹ năng · 1 = danh sách bài / thêm bài / sao lưu / tài khoản · 2 = trong một bài */
 const LVL=v=>v==='vCourses'?0:(v==='vHome'||v==='vAdd'||v==='vBk'||v==='vAcc')?1:2;
 let fromPop=false,progNav=false;
-try{history.replaceState({in:0},'')}catch(e){}
+try{if(!(history.state&&history.state.in>0))history.replaceState({in:0},'')}catch(e){}   /* tải lại trang: giữ nguyên cấp lịch sử cũ để nút Lùi/Tiến không bị lặp */
 window.addEventListener('popstate',()=>{if(progNav){progNav=false;return}const c=(history.state&&history.state.in)||0;fromPop=true;if(c===0)show('vCourses');else{render();show('vHome')}fromPop=false});
 $('nHome').onclick=()=>{collapseAll();show('vCourses')};document.querySelector('.logo').onclick=()=>{collapseAll();show('vCourses')};
 $('ccListen').onclick=()=>{render();show('vHome')};
@@ -1599,7 +1599,7 @@ $('ans').addEventListener('input',navSave);
 async function navRestore(){
   if(navDone)return;let st=null;
   try{st=JSON.parse(localStorage.getItem('diktatNav')||'null')}catch(e){}
-  navBusy=true;
+  navBusy=true;fromPop=true;   /* khôi phục: chỉ đổi màn hình, KHÔNG thêm mục mới vào lịch sử trình duyệt */
   try{if(st&&st.v){const v=st.v;
     if(v==='vHome'){await render();show('vHome')}
     else if(v==='vBk'){renderBk();show('vBk')}
@@ -1615,6 +1615,10 @@ async function navRestore(){
         else if(v==='vRead'){await ensureSegs();startRead();drawR(st.i||0)}
         else show('vMode')}}}
   }catch(e){console.warn('navRestore',e)}
+  fromPop=false;
+  try{const L=LVL(navV),c=(history.state&&history.state.in)||0;
+    if(L>c){for(let k=c+1;k<=L;k++)history.pushState({in:k},'')}
+    else if(L<c)history.replaceState({in:L},'')}catch(e){}
   navBusy=false;navDone=true;navPending=false;$('fbLoad').classList.remove('on');navSave()}
 setTimeout(()=>{if(navPending){navPending=false;if(!navDone)navDone=true;$('fbLoad').classList.remove('on')}},10000);
 openDB().then(d=>{db=d;render();fbInit()});
