@@ -32,7 +32,7 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
 .card{background:var(--g);border-radius:18px;padding:24px 28px;margin-bottom:18px}
 .card h3{margin:0 0 14px;font-size:20px}
 .card label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
-.card input[type=text],.card input[type=password],.card select,.card textarea{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:16px inherit}
+.card input[type=text],.card input[type=password],.card select,.card textarea{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-family:inherit;font-size:16px}
 .card textarea{min-height:180px;resize:vertical;line-height:1.6}
 
 /* Buttons */
@@ -56,6 +56,9 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
 .prompt-card h4{margin:0 0 6px;font-size:17px}
 .prompt-card p{margin:0;font-size:14px;color:var(--mu);line-height:1.4}
 .prompt-card .pts{display:inline-block;background:var(--yl);color:var(--tx);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;margin-bottom:8px}
+
+.prompt-card:focus-visible{outline:3px solid var(--yl);outline-offset:2px}
+.score-item .val.sm{font-size:22px}
 
 /* Results */
 .result{background:var(--bg);border:2px solid var(--gr);border-radius:18px;padding:24px 28px;margin-top:20px;display:none}
@@ -144,7 +147,7 @@ h1{margin:0 0 8px;font-size:clamp(24px,3.2vw,34px);line-height:1.2;border-left:5
     <div id="taskDesc" style="line-height:1.7"></div>
 
     <label for="ans">Bài viết của bạn:</label>
-    <textarea id="ans" placeholder="Viết bài tiếng Đức ở đây…"></textarea>
+    <textarea id="ans" maxlength="1500" placeholder="Viết bài tiếng Đức ở đây…"></textarea>
     <div class="wc">Số từ: <b id="wcount">0</b> / <span id="wreq">30</span></div>
 
     <div class="btns">
@@ -175,12 +178,15 @@ const $=id=>document.getElementById(id);
 const themeBtn=$('themeBtn');
 function setTheme(t){document.documentElement.dataset.theme=t;themeBtn.textContent=t==='dark'?'☀️':'🌙';try{localStorage.setItem('diktatTheme',t)}catch(e){}}
 themeBtn.onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀️':'🌙';
 
 /* ===== Toast ===== */
 let toastT;function toast(m,ms){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms||2500)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* Đổi model Gemini ở đây */
 const GEMINI_MODEL='gemini-2.5-flash';
+/* Tắt "thinking" ở model flash: token suy nghĩ tính vào maxOutputTokens, dễ làm JSON bị cắt */
+const GEN_CONFIG={temperature:0.2,maxOutputTokens:8192,responseMimeType:'application/json',...(/flash/.test(GEMINI_MODEL)?{thinkingConfig:{thinkingBudget:0}}:{})};
 /* Dán địa chỉ Cloudflare Worker vào đây (vd 'https://ten.ban.workers.dev').
    Có địa chỉ => học viên chỉ cần đăng nhập, không phải nhập key. Để '' => mỗi người tự nhập key như cũ. */
 const PROXY_URL='';
@@ -253,18 +259,18 @@ let curTask=null;
 
 function renderPrompts(){
   const c=$('prompts');
-  c.innerHTML=TASKS.map(t=>`<div class="prompt-card" data-id="${t.id}">
+  c.innerHTML=TASKS.map(t=>`<div class="prompt-card" role="button" tabindex="0" aria-pressed="false" data-id="${t.id}">
     <span class="pts">${t.type} – ${t.pts}</span>
     <h4>${t.title}</h4>
     <p>${t.hint}</p>
   </div>`).join('');
-  c.onclick=e=>{const card=e.target.closest('.prompt-card');if(!card)return;
-    const id=card.dataset.id;selectTask(id)}
+  c.onclick=e=>{const card=e.target.closest('.prompt-card');if(!card)return;selectTask(card.dataset.id)};
+  c.onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const card=e.target.closest('.prompt-card');if(!card)return;e.preventDefault();selectTask(card.dataset.id)}
 }
 
 function selectTask(id){
   curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
-  document.querySelectorAll('.prompt-card').forEach(c=>c.classList.toggle('on',c.dataset.id===id));
+  document.querySelectorAll('.prompt-card').forEach(c=>{const on=c.dataset.id===id;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)});
   $('taskCard').style.display='';
   $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts" style="font-size:13px">${curTask.type} – ${curTask.pts}</span></div>${curTask.desc}<br><small style="color:var(--mu)">${curTask.hint}</small>`;
   $('wreq').textContent=curTask.words;
@@ -302,7 +308,7 @@ async function gradeEssay(){
   const key=getKey();
   if(!key){toast(PROXY_URL?'Hãy đăng nhập ở Trang chủ trước':'Hãy nhập API key trước');return}
   if(!curTask){toast('Hãy chọn đề bài');return}
-  const text=$('ans').value.trim();
+  const text=$('ans').value.trim().replace(/STUDENTENTEXT/gi,'');
   if(countWords(text)<3){toast('Viết ít nhất vài từ');return}
 
   $('submitBtn').disabled=true;
@@ -313,12 +319,13 @@ async function gradeEssay(){
   const is1A=curTask.type==='1A';
   const maxPts=is1A?5:2.5;
   const nWords=countWords(text),minWords=Math.ceil(curTask.words*0.5);
+  const cap=is1A?[0.4,0.15,0.2,0.25]:[0.4,0.1,0.25,0.25];
 
   /* Luật ĐHNN: dưới 50% số từ yêu cầu => 0 điểm. Tính bằng code, không để AI đếm */
   if(nWords<minWords){
     showResult({gesamtpunktzahl:0,teilnoten:{inhalt:0,register:'–',wortschatz:'–',strukturen:'–',fehler:'–'},
       korrektur:'',kommentar:`Bài viết chỉ có ${nWords} từ, dưới 50% yêu cầu (${curTask.words} từ → tối thiểu ${minWords} từ) nên theo quy định bị 0 điểm. Hãy viết đủ cả 3 ý của đề.`,
-      mustertexte:[]},maxPts);
+      mustertexte:[],pts:cap.map(c=>({v:0,max:maxPts*c}))},maxPts);
     $('submitBtn').disabled=false;$('loading').classList.remove('on');updateSubmit();return;
   }
 
@@ -367,7 +374,7 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
 }`;
 
   const body=JSON.stringify({contents:[{parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.2,maxOutputTokens:4096,responseMimeType:'application/json'}});
+    generationConfig:GEN_CONFIG});
   const url=`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   try{
@@ -375,13 +382,14 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
     for(let attempt=0;attempt<3;attempt++){
       if(PROXY_URL){
         const tok=await fbUser.getIdToken();
-        res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({prompt})});
+        res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({taskId:curTask.id,text})});
       }else{
         res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body});
       }
       if(res.ok)break;
       lastErr=await res.text();
-      if(res.status===429||res.status>=500){
+      let lim=false;try{lim=JSON.parse(lastErr).code==='limit'}catch(_){}   /* hết quota giờ của worker: không thử lại */
+      if(!lim&&(res.status===429||res.status>=500)){
         $('loadMsg').textContent=`Máy chủ đang bận, thử lại lần ${attempt+2}/3…`;
         await new Promise(r=>setTimeout(r,1500*(attempt+1)));continue;
       }
@@ -401,11 +409,11 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
     catch(_){const m=raw.match(/\{[\s\S]*\}/);if(!m)throw new Error('Gemini không trả về đúng định dạng JSON');r=JSON.parse(m[0])}
 
     /* Tổng điểm tính bằng code, mỗi tiêu chí bị chặn ở mức tối đa */
-    const cap=is1A?[0.4,0.15,0.2,0.25]:[0.4,0.1,0.25,0.25];
     const tn=r.teilnoten||{};
     const sc=['inhalt','register','wortschatz','strukturen'].map((k,i)=>Math.max(0,Math.min(+tn[k]||0,maxPts*cap[i])));
     r.gesamtpunktzahl=Math.min(Math.round(sc.reduce((a,b)=>a+b,0)*4)/4,maxPts);   /* làm tròn 0.25 */
-    r.teilnoten={inhalt:Math.round(sc[0]*100)/100,register:tn.register_text||'–',wortschatz:tn.wortschatz_text||'–',strukturen:tn.strukturen_text||'–',fehler:tn.fehler||'–'};
+    r.pts=sc.map((v,i)=>({v,max:maxPts*cap[i]}));
+    r.teilnoten={inhalt:sc[0],register:tn.register_text||'–',wortschatz:tn.wortschatz_text||'–',strukturen:tn.strukturen_text||'–',fehler:tn.fehler||'–'};
     showResult(r,maxPts);
   }catch(e){
     console.error(e);
@@ -420,20 +428,24 @@ Trả lời BẰNG TIẾNG VIỆT (riêng "korrektur" và "mustertexte" bằng t
 function showResult(r,maxPts){
   const tn=r.teilnoten||{};
 
-  /* Score grid */
+  /* Score grid: mỗi tiêu chí hiện điểm / điểm tối đa của chính tiêu chí đó */
+  const f=n=>Math.round(n*100)/100;
+  const P=i=>r.pts&&r.pts[i]?`${f(r.pts[i].v)} <span class="max">/ ${f(r.pts[i].max)}</span>`:'–';
+  const crit=(label,i,txt)=>`<div class="score-item"><div class="label">${label}</div><div class="val sm">${P(i)}</div>${txt?`<div style="font-size:15px;margin-top:4px">${esc(txt)}</div>`:''}</div>`;
   $('scores').innerHTML=`
     <div class="score-item" style="grid-column:1/-1;text-align:center">
       <div class="label">Tổng điểm</div>
       <div class="val">${esc(r.gesamtpunktzahl)} <span class="max">/ ${maxPts}</span></div>
     </div>
-    <div class="score-item"><div class="label">Nội dung</div><div class="val">${tn.inhalt??'–'} <span class="max">/ ${maxPts}</span></div></div>
-    <div class="score-item"><div class="label">Ngữ vực (Register)</div><div style="font-size:15px;margin-top:6px">${esc(tn.register||'–')}</div></div>
-    <div class="score-item"><div class="label">Từ vựng (Wortschatz)</div><div style="font-size:15px;margin-top:6px">${esc(tn.wortschatz||'–')}</div></div>
-    <div class="score-item"><div class="label">Cấu trúc (Strukturen)</div><div style="font-size:15px;margin-top:6px">${esc(tn.strukturen||'–')}</div></div>
+    ${crit('Nội dung (Inhalt)',0,'')}
+    ${crit('Ngữ vực (Register)',1,tn.register)}
+    ${crit('Từ vựng (Wortschatz)',2,tn.wortschatz)}
+    ${crit('Cấu trúc (Strukturen)',3,tn.strukturen)}
     <div class="score-item" style="grid-column:1/-1"><div class="label">Lỗi (Fehler)</div><div style="font-size:15px;margin-top:6px">${esc(tn.fehler||'–')}</div></div>`;
 
   /* Bài sửa */
   const kor=esc(r.korrektur).replace(/\*\*(.+?)\*\*/g,'<b style="color:var(--gr)">$1</b>');
+  $('corrections').style.display=r.korrektur?'':'none';
   $('corrections').innerHTML=`<b>✏️ Bài đã sửa:</b><br><br>${kor}`;
 
   /* Nhận xét + bài mẫu */
