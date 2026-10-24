@@ -184,9 +184,9 @@ themeBtn.textContent=document.documentElement.dataset.theme==='dark'?'☀️':'�
 let toastT;function toast(m,ms){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms||2500)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* Đổi model Gemini ở đây */
-const GEMINI_MODEL='gemini-2.5-flash';
+const GEMINI_MODEL='gemini-3.6-flash';
 /* Tắt "thinking" ở model flash: token suy nghĩ tính vào maxOutputTokens, dễ làm JSON bị cắt */
-const GEN_CONFIG={temperature:0.2,maxOutputTokens:8192,responseMimeType:'application/json',...(/flash/.test(GEMINI_MODEL)?{thinkingConfig:{thinkingBudget:0}}:{})};
+const GEN_CONFIG={temperature:0.2,maxOutputTokens:8192,responseMimeType:'application/json',...(/gemini-2\.5-flash/.test(GEMINI_MODEL)?{thinkingConfig:{thinkingBudget:0}}:{})};
 /* Dán địa chỉ Cloudflare Worker vào đây (vd 'https://ten.ban.workers.dev').
    Có địa chỉ => học viên chỉ cần đăng nhập, không phải nhập key. Để '' => mỗi người tự nhập key như cũ. */
 const PROXY_URL='https://diktat-grader.trantuan14082006.workers.dev';
