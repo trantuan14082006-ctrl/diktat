@@ -131,7 +131,6 @@ h3{font-size:22px;margin:0 0 18px}
   <a class="logo" href="index.html"><b>D</b>Diktat Dashboard</a>
   <nav>
     <a href="index.html">Deutschkurs</a>
-    <a class="act">Schreiben</a>
     <button type="button" class="tg" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌙</button>
   </nav>
 </header>
@@ -296,7 +295,7 @@ function show(v){VIEWS.forEach(i=>$(i).classList.toggle('hide',i!==v));const el=
 function renderPrompts(){
   const groups=[{type:'1A',name:'1A – Viết thư / E-Mail'},{type:'1B',name:'1B – Viết đoạn văn'}];
   const c=$('prompts');
-  c.innerHTML=groups.map(g=>`<div class="acc open"><div class="ah" role="button" tabindex="0"><em class="nm">${g.name}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${TASKS.filter(t=>t.type===g.type).map(t=>`<div class="pill" role="button" tabindex="0" data-id="${t.id}">${t.title}<small>${t.pts} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`).join('');
+  c.innerHTML=groups.map(g=>`<div class="acc"><div class="ah" role="button" tabindex="0"><em class="nm">${g.name}</em><span>⌄</span></div><div class="abw"><div class="ab"><div class="abi">${TASKS.filter(t=>t.type===g.type).map(t=>`<div class="pill" role="button" tabindex="0" data-id="${t.id}">${t.title}<small>${t.pts} · ~${t.words} từ</small></div>`).join('')}</div></div></div></div>`).join('');
   c.onclick=e=>{const p=e.target.closest('.pill');if(p){selectTask(p.dataset.id);return}const h=e.target.closest('.ah');if(h)h.parentElement.classList.toggle('open')};
   c.onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest('.pill,.ah');if(!t)return;e.preventDefault();t.click()};
 }
