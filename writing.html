@@ -177,7 +177,7 @@ h3{font-size:22px;margin:0 0 18px}
 
   <!-- Màn hình 1: danh sách đề -->
   <div id="vList">
-    <div class="th"><h1>Intensives Schreiben</h1><input class="srch" id="q" placeholder="🔍  Suchen" autocomplete="off"></div>
+    <div class="th"><h1>Intensives Schreiben</h1></div>
     <h3>Schreiben und KI-Korrektur</h3>
     <div class="col" id="prompts"></div>
     <p class="mu" id="noTask" style="display:none">Không có đề nào khớp.</p>
@@ -376,7 +376,7 @@ async function loadCustomTasks(){
     const list=snap.docs.map(d=>d.data());
     try{localStorage.setItem('wTasksCache',JSON.stringify(list))}catch(e){}
     applyCustom(list);
-    if(!$('vList').classList.contains('hide')){if(/^#t=/.test(location.hash))route();else renderPrompts($('q').value)}
+    if(!$('vList').classList.contains('hide')){if(/^#t=/.test(location.hash))route();else renderPrompts()}
   }catch(e){console.warn('writingTasks',e.code||e)}
 }
 
@@ -439,7 +439,6 @@ function selectTask(id,fromRoute){
 }
 
 renderPrompts();
-$('q').addEventListener('input',()=>renderPrompts($('q').value));
 
 /* Nút chèn ä ö ü ß, quay lại danh sách */
 document.querySelectorAll('.tools [data-c]').forEach(b=>{
@@ -449,7 +448,7 @@ document.querySelectorAll('.tools [data-c]').forEach(b=>{
     a.setRangeText(c,s,e,'end');a.focus();a.dispatchEvent(new Event('input'))}
 });
 /* Nút Back của trình duyệt / nút ← Zurück: từ màn làm bài về danh sách đề (không thoát khỏi trang) */
-function toList(){openG.clear();renderPrompts($('q').value);show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
+function toList(){openG.clear();renderPrompts();show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
 function route(first){   /* địa chỉ #t=<id> là màn làm bài; không có # là danh sách 1A/1B => Back/Forward luôn đúng */
   const m=/^#t=(.+)$/.exec(location.hash);
   if(m){let id='';try{id=decodeURIComponent(m[1])}catch(e){}
