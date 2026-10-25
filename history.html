@@ -273,6 +273,11 @@ const HC=()=>firebase.firestore().collection('users').doc(fbUser.uid).collection
 function readLocal(){try{return JSON.parse(localStorage.getItem(HK(fbUser.uid))||'[]')}catch(e){return[]}}
 function saveLocal(){try{localStorage.setItem(HK(fbUser.uid),JSON.stringify(HIST.slice(0,150)))}catch(e){}}
 
+function critHTML(crit,score,max){
+  const f=n=>Math.round((+n||0)*100)/100;
+  const fl=it=>`<div style="font-size:14px;margin-top:4px">${it.urteil===2?'✅':it.urteil===1?'🟡':'❌'} <b>${esc(it.punkt)}</b>${it.hinweis?' – '+esc(it.hinweis):''}</div>`;
+  return `<div class="score-item" style="grid-column:1/-1;text-align:center"><div class="label">Tổng điểm</div><div class="val">${f(score)} <span class="max">/ ${f(max)}</span></div></div>`
+    +(crit||[]).map(g=>`<div class="score-item"><div class="label">${esc(g.label)}</div><div class="val vs">${f(g.v)} <span class="max">/ ${f(g.max)}</span></div>${(g.rows||[]).map(r=>`<div style="font-size:14px;margin-top:8px"><b>${esc(r.label)}:</b> ${f(r.v)} – ${esc(r.txt)}</div>${(r.items||[]).map(fl).join('')}`).join('')}</div>`).join('')}
 function bodyHTML(e){
   const tn=e.teilnoten||{};
   const P=i=>e.ptsArr&&e.ptsArr[i]?`${f2(e.ptsArr[i].v)} <span class="max">/ ${f2(e.ptsArr[i].max)}</span>`:'–';
@@ -281,10 +286,10 @@ function bodyHTML(e){
   const must=(e.mustertexte&&e.mustertexte.length)?`<h4>📖 Bài mẫu tham khảo:</h4>`+e.mustertexte.map((m,i)=>`<div style="background:var(--g);border-radius:10px;padding:12px 16px;margin:8px 0;font-style:italic">${i+1}. ${esc(m)}</div>`).join(''):'';
   return `<div class="hmeta"><span class="pts">${esc(e.level||'A1')} · ${esc(e.type||'')} – ${esc(e.pts||'')}</span> &nbsp; ${+e.words||0} / ~${+e.req||0} từ</div>
     <div class="corrections"><b>📝 Bài làm của bạn:</b><br><br>${esc(e.text||'')}</div>
-    <div class="score-grid">
+    <div class="score-grid">${e.crit&&e.crit.length?critHTML(e.crit,e.score,e.max):`
       <div class="score-item" style="grid-column:1/-1;text-align:center"><div class="label">Tổng điểm</div><div class="val">${f2(e.score)} <span class="max">/ ${f2(e.max)}</span></div></div>
       ${crit('Nội dung (Inhalt)',0,'')}${crit('Ngữ vực (Register)',1,tn.register)}${crit('Từ vựng (Wortschatz)',2,tn.wortschatz)}${crit('Cấu trúc (Strukturen)',3,tn.strukturen)}
-      <div class="score-item" style="grid-column:1/-1"><div class="label">Lỗi (Fehler)</div><div style="font-size:15px;margin-top:6px">${esc(tn.fehler||'–')}</div></div>
+      <div class="score-item" style="grid-column:1/-1"><div class="label">Lỗi (Fehler)</div><div style="font-size:15px;margin-top:6px">${esc(tn.fehler||'–')}</div></div>`}
     </div>
     ${e.korrektur?`<div class="corrections"><b>✏️ Bài đã sửa:</b><br><br>${kor}</div>`:''}
     <div class="feedback"><h4>💬 Nhận xét:</h4>${esc(e.kommentar||'')}${must}</div>

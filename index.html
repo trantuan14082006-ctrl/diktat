@@ -323,7 +323,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 <div class="card skph hide" id="add_read"><img alt="" data-from="read"><div><h3>Intensives Lesen</h3><p class="mu" style="margin:0">Sắp ra mắt</p></div></div>
 <div class="card hide" id="add_write">
   <label>Trình độ</label><select id="wtLevel" class="wmsel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select>
-  <label>Dạng bài <span class="mu">(quyết định thang điểm khi chấm)</span></label><select id="wtType" class="wmsel"><option value="1A">1A – Viết thư / E-Mail (5 điểm)</option><option value="1B">1B – Viết đoạn văn (2,5 điểm)</option></select>
+  <label>Dạng bài <span class="mu">(chấm theo thang của đề cương: 1A và 1B đều 10 điểm)</span></label><select id="wtType" class="wmsel"><option value="1A">1A – Viết thư / E-Mail (10 điểm)</option><option value="1B">1B – Viết đoạn văn (10 điểm)</option></select>
   <label>Tên đề <span class="mu">(tiếng Đức)</span></label><input type="text" id="wtTitle" placeholder="vd. Einladung zur Party">
   <label>Mô tả đề bài cho học viên <span class="mu">(tiếng Việt – mỗi dòng một dòng, dùng **chữ** để in đậm; dòng “Viết khoảng … từ” được tự thêm)</span></label>
   <textarea id="wtDesc" placeholder="**Bạn muốn mời bạn đến bữa tiệc sinh nhật.**&#10;Viết một E-Mail cho bạn. Hãy viết về 3 điểm sau:&#10;• **Wann?** – Bữa tiệc khi nào?&#10;• **Wo?** – Ở đâu?"></textarea>
@@ -1685,7 +1685,7 @@ openDB().then(d=>{db=d;render();fbInit()});
 /* ===== Thêm đề Schreiben (chỉ admin) – lưu ở Firestore: users/{admin}/writingTasks, học viên đọc được ===== */
 const WT=()=>firebase.firestore().collection('users').doc(fbBaseUid()).collection('writingTasks');
 let wtEdit=null,wtItems=[];
-const wtPts=t=>t==='1B'?'2.5 Điểm':'5 Điểm';
+const wtPts=t=>'10 Điểm';
 function wtMsg(t,bad){const e=$('wtMsg');e.textContent=t||'';e.style.color=bad?'var(--bad)':''}
 function wtErr(e){console.warn('writingTasks',e);
   wtMsg(e&&e.code==='permission-denied'?'Firestore chưa cho phép đọc/ghi đề viết: cần thêm quy tắc cho users/{uid}/writingTasks.':'Lỗi: '+((e&&e.message)||e),true)}
@@ -1764,7 +1764,7 @@ $('bkwFile').onchange=async e=>{const fs=[...e.target.files];e.target.value='';i
       for(let i=0;i<ok.length;i+=400){const b=firebase.firestore().batch();
         ok.slice(i,i+400).forEach((t,k)=>{const ty=t.type==='1B'?'1B':'1A',wd=Math.max(10,Math.min(500,+t.words||30));
           const id=String(t.id||('w'+Date.now()+'_'+n+'_'+k)).replace(/[\/\s]/g,'_');
-          b.set(WT().doc(id),{id,type:ty,level:String(t.level||'A1'),title:String(t.title),pts:ty==='1B'?'2.5 Điểm':'5 Điểm',words:wd,descRaw:String(t.descRaw||''),hint:String(t.hint||''),aufgabe:String(t.aufgabe),createdAt:+t.createdAt||Date.now()})});
+          b.set(WT().doc(id),{id,type:ty,level:String(t.level||'A1'),title:String(t.title),pts:'10 Điểm',words:wd,descRaw:String(t.descRaw||''),hint:String(t.hint||''),aufgabe:String(t.aufgabe),createdAt:+t.createdAt||Date.now()})});
         await b.commit();n+=Math.min(400,ok.length-i)}
       if(ok.length<arr.length)bad.push(f.name+': bỏ qua '+(arr.length-ok.length)+' đề thiếu tên hoặc đề bài')
     }catch(er){console.warn('bkw in',er);bad.push(f.name+': '+(er&&er.code==='permission-denied'?'Firestore chưa cho phép ghi (thiếu quy tắc writingTasks)':(er&&er.message)||er))}}
