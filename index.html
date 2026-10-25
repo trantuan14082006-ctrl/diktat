@@ -260,7 +260,18 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 
 <div id="vBk" class="hide">
  <div class="th"><h1>Sao lưu</h1></div>
- <div class="card">
+<div class="sktab" id="bkTab" role="tablist"><button type="button" role="tab" data-sk="read" class=""><img alt="" data-from="read">Lesen</button><button type="button" role="tab" data-sk="write" class=""><img alt="" data-from="write">Schreiben</button><button type="button" role="tab" data-sk="speak" class=""><img alt="" data-from="speak">Sprechen</button><button type="button" role="tab" data-sk="listen" class="on"><img alt="" data-from="listen">Hören</button></div>
+<div class="card skph hide" id="bk_read"><img alt="" data-from="read"><div><h3>Intensives Lesen</h3><p class="mu" style="margin:0">Sắp ra mắt</p></div></div>
+<div class="card hide" id="bk_write">
+  <div class="bkb"><input type="text" id="bkwQ" placeholder="🔍 Lọc đề…"><button class="sbtn" id="bkwAll">Chọn tất cả</button><button class="sbtn" id="bkwNone">Bỏ chọn</button></div>
+  <div class="bkl" id="bkwList"></div>
+  <div class="mu" id="bkwInfo"></div>
+  <div class="row"><button class="sbtn p" id="bkwOut">⬇ Xuất ra file</button><button class="sbtn" id="bkwIn">⬆ Nhập bản sao lưu</button><input type="file" id="bkwFile" accept=".json,application/json" multiple class="hide"></div>
+  <div class="mu" id="bkwMsg" style="margin-top:10px"></div>
+  <p class="mu" style="margin:14px 0 0">Chỉ sao lưu các đề bạn đã thêm ở “Thêm bài”. Các đề A1 có sẵn nằm trong code của trang nên không cần sao lưu ở đây.</p>
+</div>
+<div class="card skph hide" id="bk_speak"><img alt="" data-from="speak"><div><h3>Intensives Sprechen</h3><p class="mu" style="margin:0">Sắp ra mắt</p></div></div>
+ <div class="card" id="bk_listen">
   <div id="bkWarn" class="hide" style="background:var(--yl2);border:1px solid var(--yl);border-radius:12px;padding:10px 16px;margin:0 0 12px;color:var(--tx)"></div>  <div class="bkb"><input type="text" id="bkQ" placeholder="🔍 Lọc bài học…"><button class="sbtn" id="bkAll">Chọn tất cả</button><button class="sbtn" id="bkNone">Bỏ chọn</button></div>
   <div class="bkl" id="bkList"></div>
   <div class="mu" id="bkInfo"></div>
@@ -1690,6 +1701,61 @@ $('wtList').onclick=async e=>{
   else if(b.dataset.a==='rm'){
     if(!confirm('Xoá đề “'+t.title+'”?'))return;
     try{await WT().doc(t.id).delete();if(wtEdit===t.id)wtReset();wtMsg('Đã xoá.');await wtRender()}catch(er){wtErr(er)}}};
+
+/* ===== Sao lưu theo 4 kỹ năng ===== */
+const bkwSel=new Set();let bkwAllL=[];
+const bkwMsg=(t,bad)=>{const e=$('bkwMsg');e.textContent=t||'';e.style.color=bad?'var(--bad)':''};
+const bkwName=t=>(t.level||'A1')+' · '+t.type+' – '+(t.type==='1B'?'Viết đoạn văn':'Viết thư / E-Mail');
+async function bkwRender(){
+  if(!fbUser||!fbOk()){$('bkwList').innerHTML='<p class="mu" style="margin:8px 4px">Chưa đăng nhập.</p>';return}
+  try{const snap=await WT().get();
+    bkwAllL=snap.docs.map(d=>d.data()).sort((a,b)=>bkwName(a).localeCompare(bkwName(b))||(a.createdAt||0)-(b.createdAt||0));bkwMsg('')}
+  catch(e){console.warn('bkw',e);bkwAllL=[];bkwMsg(e&&e.code==='permission-denied'?'Firestore chưa cho phép đọc đề viết (thiếu quy tắc users/{uid}/writingTasks).':'Lỗi: '+((e&&e.message)||e),true)}
+  const ids=new Set(bkwAllL.map(t=>t.id));[...bkwSel].forEach(i=>{if(!ids.has(i))bkwSel.delete(i)});
+  drawBkw()}
+function drawBkw(){
+  const q=$('bkwQ').value.trim().toLowerCase(),g={};
+  bkwAllL.filter(t=>!q||(t.title+' '+(t.hint||'')+' '+bkwName(t)).toLowerCase().includes(q)).forEach(t=>(g[bkwName(t)]=g[bkwName(t)]||[]).push(t));
+  const ks=Object.keys(g).sort();
+  $('bkwList').innerHTML=ks.length?ks.map(k=>`<div class="bkg"><label class="bkh"><input type="checkbox" data-g="1"><span class="t">${esc(k)}</span><span class="mu">${g[k].length} đề</span></label>${g[k].map(t=>`<label class="bki"><input type="checkbox" data-id="${esc(t.id)}"${bkwSel.has(t.id)?' checked':''}><span class="t">${esc(t.title)}</span><span class="mu">~${+t.words||30} từ</span></label>`).join('')}</div>`).join('')
+    :'<p class="mu" style="margin:8px 4px">'+(bkwAllL.length?'Không có đề nào khớp.':'Chưa có đề nào để sao lưu.')+'</p>';
+  document.querySelectorAll('#bkwList .bkg').forEach(gr=>{const c=[...gr.querySelectorAll('input[data-id]')],n=c.filter(x=>x.checked).length,h=gr.querySelector('input[data-g]');h.checked=n===c.length&&n>0;h.indeterminate=n>0&&n<c.length});
+  const n=bkwAllL.filter(t=>bkwSel.has(t.id)).length;
+  $('bkwInfo').textContent=n?`đã chọn ${n}/${bkwAllL.length} đề`:`${bkwAllL.length} đề – chưa chọn đề nào`;
+  $('bkwOut').disabled=!n}
+$('bkwQ').oninput=drawBkw;
+$('bkwList').onchange=e=>{const t=e.target;
+  if(t.dataset.id!==undefined){t.checked?bkwSel.add(t.dataset.id):bkwSel.delete(t.dataset.id)}
+  else if(t.dataset.g!==undefined){t.closest('.bkg').querySelectorAll('input[data-id]').forEach(x=>{x.checked=t.checked;t.checked?bkwSel.add(x.dataset.id):bkwSel.delete(x.dataset.id)})}
+  drawBkw()};
+$('bkwAll').onclick=()=>{document.querySelectorAll('#bkwList input[data-id]').forEach(x=>bkwSel.add(x.dataset.id));drawBkw()};
+$('bkwNone').onclick=()=>{bkwSel.clear();drawBkw()};
+$('bkwOut').onclick=()=>{const sel=bkwAllL.filter(t=>bkwSel.has(t.id));if(!sel.length)return;
+  saveBlob(new Blob([JSON.stringify({app:'diktat-writing',v:1,exportedAt:new Date().toISOString(),tasks:sel},null,1)],{type:'application/json'}),'schreiben-'+today()+'.json');
+  bkwMsg(`Đã xuất ${sel.length} đề ✓ – hãy cất file ở nơi an toàn.`)};
+$('bkwIn').onclick=()=>$('bkwFile').click();
+$('bkwFile').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+  if(!fbUser||!fbOk()){bkwMsg('Chưa đăng nhập.',true);return}
+  let n=0;const bad=[];
+  for(const f of fs){
+    try{bkwMsg('Đang đọc '+f.name+'…');
+      const j=JSON.parse(await f.text()),arr=Array.isArray(j)?j:(j&&Array.isArray(j.tasks)?j.tasks:null);
+      if(!arr){bad.push(f.name+': không phải bản sao lưu đề viết');continue}
+      const ok=arr.filter(t=>t&&t.title&&t.aufgabe);
+      for(let i=0;i<ok.length;i+=400){const b=firebase.firestore().batch();
+        ok.slice(i,i+400).forEach((t,k)=>{const ty=t.type==='1B'?'1B':'1A',wd=Math.max(10,Math.min(500,+t.words||30));
+          const id=String(t.id||('w'+Date.now()+'_'+n+'_'+k)).replace(/[\/\s]/g,'_');
+          b.set(WT().doc(id),{id,type:ty,level:String(t.level||'A1'),title:String(t.title),pts:ty==='1B'?'2.5 Điểm':'5 Điểm',words:wd,descRaw:String(t.descRaw||''),hint:String(t.hint||''),aufgabe:String(t.aufgabe),createdAt:+t.createdAt||Date.now()})});
+        await b.commit();n+=Math.min(400,ok.length-i)}
+      if(ok.length<arr.length)bad.push(f.name+': bỏ qua '+(arr.length-ok.length)+' đề thiếu tên hoặc đề bài')
+    }catch(er){console.warn('bkw in',er);bad.push(f.name+': '+(er&&er.code==='permission-denied'?'Firestore chưa cho phép ghi (thiếu quy tắc writingTasks)':(er&&er.message)||er))}}
+  bkwMsg(`Đã nhập ${n} đề ✓ (đề trùng ID sẽ bị ghi đè).`+(bad.length?' Lỗi: '+bad.join('; '):''),!n&&bad.length>0);
+  await bkwRender()};
+(function(){const tb=$('bkTab');
+  tb.onclick=e=>{const b=e.target.closest('button[data-sk]');if(!b)return;
+    tb.querySelectorAll('button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',x===b)});
+    ['read','write','speak','listen'].forEach(k=>$('bk_'+k).classList.toggle('hide',k!==b.dataset.sk));
+    if(b.dataset.sk==='write')bkwRender();else if(b.dataset.sk==='listen')renderBk()}})();
 (function(){document.querySelectorAll('img[data-from]').forEach(i=>{const c=document.querySelector('.cc.'+i.dataset.from+' .cimg');if(c)i.src=c.src})})();
 (function(){const hc=navigator.hardwareConcurrency||4;let n=1,why='fast mode off';
   if(self.crossOriginIsolated){const w=wThreadsPick();n=w>0?w:Math.max(1,Math.min(4,hc-1));why='fast mode on'}
