@@ -116,6 +116,7 @@ h3{font-size:22px;margin:0 0 18px}
 .um-s{white-space:nowrap;padding:6px 20px 14px;color:var(--mu);font-size:13px;border-bottom:1px dashed var(--bd)}
 .um-o{display:block;width:100%;text-align:left;padding:13px 20px;border:0;background:none;color:var(--tx);font:16px system-ui,sans-serif;cursor:pointer}
 .um-o:hover{background:var(--g)}
+a.um-o{text-decoration:none;box-sizing:border-box}
 @media(max-width:700px){.fb-bar{margin-left:0}}
 
 /* Màn hình tải: chữ D xoay (giống trang chính) */
@@ -157,7 +158,7 @@ h3{font-size:22px;margin:0 0 18px}
   <nav>
     <a href="index.html" class="act">Deutschkurs</a>
     <button type="button" class="tg" id="themeBtn" aria-label="Đổi giao diện sáng/tối">🌙</button>
-    <div class="fb-bar"><div class="um"><button type="button" class="um-av hide" id="fbAuth" aria-haspopup="true" aria-expanded="false"></button><div class="um-pop hide" id="umPop" role="menu"><div class="um-n" id="umName"></div><div class="um-s" id="umSess"></div><button type="button" class="um-o" id="umOut" role="menuitem">Đăng xuất</button></div></div></div>
+    <div class="fb-bar"><div class="um"><button type="button" class="um-av hide" id="fbAuth" aria-haspopup="true" aria-expanded="false"></button><div class="um-pop hide" id="umPop" role="menu"><div class="um-n" id="umName"></div><div class="um-s" id="umSess"></div><a class="um-o" id="umHist" href="history.html" role="menuitem">📋 Lịch sử bài làm</a><button type="button" class="um-o" id="umOut" role="menuitem">Đăng xuất</button></div></div></div>
   </nav>
 </header>
 
@@ -484,6 +485,18 @@ $('newBtn').onclick=()=>{
 /* ===== Gemini grading ===== */
 $('submitBtn').onclick=gradeEssay;
 
+
+/* ===== Lưu lịch sử bài làm: ở máy (localStorage) + Firestore users/{uid}/writingHistory ===== */
+function histSave(r,maxPts,text,nWords){
+  if(!fbUser||!curTask)return;
+  const e={id:'h'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),skill:'write',at:Date.now(),
+    taskId:curTask.id,title:curTask.title,level:curTask.level||'A1',type:curTask.type,pts:curTask.pts,words:nWords,req:curTask.words,text,
+    max:maxPts,score:+r.gesamtpunktzahl||0,ptsArr:(r.pts||[]).map(x=>({v:+x.v||0,max:+x.max||0})),teilnoten:r.teilnoten||{},
+    korrektur:r.korrektur||'',kommentar:r.kommentar||'',mustertexte:r.mustertexte||[]};
+  try{const k='wHist:'+fbUser.uid,a=JSON.parse(localStorage.getItem(k)||'[]');a.unshift(e);localStorage.setItem(k,JSON.stringify(a.slice(0,150)))}catch(er){}
+  try{firebase.firestore().collection('users').doc(fbUser.uid).collection('writingHistory').doc(e.id).set(e).catch(er=>console.warn('history',er.code||er))}catch(er){}
+}
+
 async function gradeEssay(){
   const key=getKey();
   if(!key){toast(PROXY_URL?'Hãy đăng nhập ở Trang chủ trước':'Hãy nhập API key trước');return}
@@ -506,6 +519,7 @@ async function gradeEssay(){
     showResult({gesamtpunktzahl:0,teilnoten:{inhalt:0,register:'–',wortschatz:'–',strukturen:'–',fehler:'–'},
       korrektur:'',kommentar:`Bài viết chỉ có ${nWords} từ, dưới 50% yêu cầu (${curTask.words} từ → tối thiểu ${minWords} từ) nên theo quy định bị 0 điểm. Hãy viết đủ cả 3 ý của đề.`,
       mustertexte:[],pts:cap.map(c=>({v:0,max:maxPts*c}))},maxPts);
+    histSave(lastR,maxPts,text,nWords);
     $('submitBtn').disabled=false;$('loading').classList.remove('on');updateSubmit();return;
   }
 
@@ -601,6 +615,7 @@ NGÔN NGỮ TRẢ LỜI (BẮT BUỘC): học viên là người Việt nên tr�
     r.pts=sc.map((v,i)=>({v,max:maxPts*cap[i]}));
     r.teilnoten={inhalt:sc[0],register:tn.register_text||'–',wortschatz:tn.wortschatz_text||'–',strukturen:tn.strukturen_text||'–',fehler:tn.fehler||'–'};
     showResult(r,maxPts);
+    histSave(r,maxPts,text,nWords);
   }catch(e){
     console.error(e);
     toast('Lỗi: '+(e.message||e),7000);
@@ -611,7 +626,9 @@ NGÔN NGỮ TRẢ LỜI (BẮT BUỘC): học viên là người Việt nên tr�
   updateSubmit();
 }
 
+let lastR=null;
 function showResult(r,maxPts){
+  lastR=r;
   const tn=r.teilnoten||{};
 
   /* Score grid: mỗi tiêu chí hiện điểm / điểm tối đa của chính tiêu chí đó */
