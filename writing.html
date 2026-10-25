@@ -118,6 +118,15 @@ h3{font-size:22px;margin:0 0 18px}
 .um-o:hover{background:var(--g)}
 @media(max-width:700px){.fb-bar{margin-left:0}}
 
+/* Màn hình tải: chữ D xoay (giống trang chính) */
+#fbLoad{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;background:var(--bg)}
+#fbLoad.on{display:flex}
+#fbLoad b{display:grid;place-items:center;box-sizing:border-box;width:88px;height:88px;border-radius:26px 26px 9px 9px;border:9px solid var(--yl);color:var(--yl);font:700 44px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;animation:lspin 1.1s cubic-bezier(.65,0,.35,1) infinite}
+@keyframes lspin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#fbLoad b{animation:none}}
+
+#topbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--yl);box-shadow:0 0 10px var(--yl);z-index:100001;opacity:0;pointer-events:none;transition:width .25s ease,opacity .3s ease}
+
 /* Dark mode */
 :root[data-theme=dark]{color-scheme:dark;
 --bg:#16181d;--g:#22262d;--gr:#d4a017;--tx:#e8eaee;--mu:#98a1ad;--bd:#383e48;--sel:#4a3d12;--bad:#ff8272;--sh:0 2px 12px rgba(0,0,0,.55);--yl:#e0ac1a;--yl2:#3a3110}
@@ -137,6 +146,8 @@ h3{font-size:22px;margin:0 0 18px}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
 </head>
 <body>
+<div id="fbLoad" class="on" role="status" aria-label="Đang tải"><b>D</b></div>
+<div id="topbar"></div>
 
 <div id="toast"></div>
 
@@ -269,6 +280,7 @@ if(typeof firebase!=='undefined'){
       fbUser=u;
       if(sessExpired()){firebase.auth().signOut();toLogin('Phiên đăng nhập đã hết hạn (24 giờ). Vui lòng đăng nhập lại.');return}
       fbAvatar();                                                /* hiện avatar ngay, tên đầy đủ cập nhật sau */
+      hideLoad();
       loadCustomTasks();                                         /* đề do admin thêm ở trang Thêm bài */
       if(u.uid!==LIB_UID){
         try{const d=await firebase.firestore().collection('members').doc(u.uid).get();
@@ -277,8 +289,8 @@ if(typeof firebase!=='undefined'){
       }
     });
     setInterval(()=>{if(fbUser&&sessExpired()){firebase.auth().signOut();toLogin('Phiên đăng nhập đã hết hạn (24 giờ). Vui lòng đăng nhập lại.')}},60000);
-  }catch(e){console.warn('fb auth',e)}
-}
+  }catch(e){console.warn('fb auth',e);hideLoad()}
+}else hideLoad();
 
 /* ===== API Key ===== */
 function getKey(){if(PROXY_URL)return fbUser?'proxy':'';try{return localStorage.getItem('geminiKey')||''}catch(e){return ''}}
@@ -364,13 +376,33 @@ async function loadCustomTasks(){
     const list=snap.docs.map(d=>d.data());
     try{localStorage.setItem('wTasksCache',JSON.stringify(list))}catch(e){}
     applyCustom(list);
-    if(!$('vList').classList.contains('hide'))renderPrompts($('q').value)
+    if(!$('vList').classList.contains('hide')){if(/^#t=/.test(location.hash))route();else renderPrompts($('q').value)}
   }catch(e){console.warn('writingTasks',e.code||e)}
 }
 
+/* ===== Thanh vàng chạy trên cùng khi chuyển mục (giống YouTube) ===== */
+var TopBar=(function(){const el=document.getElementById('topbar');let t1=0,t2=0,w=0;
+  const busy=()=>{const l=document.getElementById('fbLoad');return !!(l&&l.classList.contains('on'))};
+  function start(){if(!el)return;clearTimeout(t2);clearInterval(t1);el.style.transition='none';el.style.width='0';el.style.opacity='1';void el.offsetWidth;
+    el.style.transition='width .25s ease,opacity .3s ease';w=14;el.style.width=w+'%';t1=setInterval(()=>{w+=(92-w)*.12;el.style.width=w+'%'},180)}
+  function done(){if(!el)return;clearInterval(t1);el.style.width='100%';t2=setTimeout(()=>{el.style.opacity='0';t2=setTimeout(()=>{el.style.transition='none';el.style.width='0'},320)},200)}
+  function pulse(){if(busy())return;start();setTimeout(done,380)}
+  return{start,done,pulse}})();
+/* bấm link sang trang khác => thanh chạy tới khi trang mới tải xong */
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');
+  if(!a||e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||a.target==='_blank'||a.hasAttribute('download'))return;
+  let u;try{u=new URL(a.href,location.href)}catch(er){return}
+  if(u.origin===location.origin&&u.pathname!==location.pathname)TopBar.start()});
+window.addEventListener('pageshow',e=>{if(e.persisted)TopBar.done()});
+
+/* màn hình chữ D: ẩn khi đã biết trạng thái đăng nhập (tối đa 10 giây) */
+function hideLoad(){const l=document.getElementById('fbLoad');if(l)l.classList.remove('on')}
+setTimeout(hideLoad,10000);
+window.addEventListener('pageshow',e=>{if(e.persisted)hideLoad()});
+
 /* ===== Chuyển màn hình ===== */
 const VIEWS=['vList','vTask'];
-function show(v){VIEWS.forEach(i=>$(i).classList.toggle('hide',i!==v));const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin');window.scrollTo({top:0})}
+function show(v){TopBar.pulse();VIEWS.forEach(i=>$(i).classList.toggle('hide',i!==v));const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin');window.scrollTo({top:0})}
 
 const openG=new Set();   /* nhóm đang mở (về danh sách thì xoá hết => thu gọn) */
 function renderPrompts(q){
@@ -391,14 +423,16 @@ function renderPrompts(q){
   c.onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const t=e.target.closest('.pill,.ah');if(!t)return;e.preventDefault();t.click()};
 }
 
-function selectTask(id){
+function selectTask(id,fromRoute){
   curTask=TASKS.find(t=>t.id===id);if(!curTask)return;
   $('ttl').textContent='Intensives Schreiben / '+curTask.title;
   $('taskDesc').innerHTML=`<div style="margin-bottom:8px"><span class="pts">${esc(curTask.level||'A1')} · ${curTask.type} – ${esc(curTask.pts)}</span></div>${curTask.desc}${curTask.hint?`<br><small style="color:var(--mu)">${esc(curTask.hint)}</small>`:''}`;
   $('wreq').textContent=curTask.words;
-  $('ans').value='';$('wcount').textContent='0';$('wcount').style.color='';
+  let dr='';try{dr=sessionStorage.getItem('wdraft:'+id)||''}catch(e){}
+  $('ans').value=dr;const n0=countWords(dr);$('wcount').textContent=n0;$('wcount').style.color=(n0&&n0>=curTask.words*0.5)?'var(--gr)':'';
   $('result').classList.remove('on');
-  try{history.state&&history.state.v==='vTask'?history.replaceState({v:'vTask'},''):history.pushState({v:'vTask'},'')}catch(e){}
+  if(!fromRoute){const h='#t='+encodeURIComponent(id);
+    if(location.hash!==h){try{/^#t=/.test(location.hash)?history.replaceState(null,'',h):history.pushState(null,'',h)}catch(e){}}}
   show('vTask');
   $('ans').focus({preventScroll:true});
   updateSubmit();
@@ -415,11 +449,19 @@ document.querySelectorAll('.tools [data-c]').forEach(b=>{
     a.setRangeText(c,s,e,'end');a.focus();a.dispatchEvent(new Event('input'))}
 });
 /* Nút Back của trình duyệt / nút ← Zurück: từ màn làm bài về danh sách đề (không thoát khỏi trang) */
-try{history.replaceState({v:'vList'},'')}catch(e){}
 function toList(){openG.clear();renderPrompts($('q').value);show('vList')}   /* về danh sách: vẽ lại => các nhóm 1A/1B thu gọn */
-window.addEventListener('popstate',e=>{if(e.state&&e.state.v==='vTask'&&curTask)show('vTask');else toList()});
+function route(first){   /* địa chỉ #t=<id> là màn làm bài; không có # là danh sách 1A/1B => Back/Forward luôn đúng */
+  const m=/^#t=(.+)$/.exec(location.hash);
+  if(m){let id='';try{id=decodeURIComponent(m[1])}catch(e){}
+    if(TASKS.some(t=>t.id===id)){selectTask(id,true);return}
+    if(first)return}                 /* đề do admin thêm chưa tải xong: giữ ở danh sách, định tuyến lại sau */
+  toList()}
+window.addEventListener('popstate',()=>route());
 window.addEventListener('pageshow',e=>{if(e.persisted&&!$('vList').classList.contains('hide'))toList()});
-$('pback').onclick=()=>{if(history.state&&history.state.v==='vTask'){try{history.back();return}catch(e){}}toList()};
+$('pback').onclick=()=>{
+  if(/^#t=/.test(location.hash)){history.back();
+    setTimeout(()=>{if(/^#t=/.test(location.hash)){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}toList()}},350);return}
+  toList()};
 
 /* ===== Word counter ===== */
 const countWords=s=>s.trim()?s.trim().split(/\s+/).length:0;
@@ -427,12 +469,13 @@ $('ans').addEventListener('input',()=>{
   const n=countWords($('ans').value);
   $('wcount').textContent=n;
   $('wcount').style.color=(curTask&&n>=curTask.words*0.5)?'var(--gr)':'var(--tx)';
+  try{if(curTask)sessionStorage.setItem('wdraft:'+curTask.id,$('ans').value)}catch(e){}
   updateSubmit();
 });
 function updateSubmit(){$('submitBtn').disabled=!getKey()||countWords($('ans').value)<3||!curTask}
 
 /* ===== Clear & New ===== */
-$('clearBtn').onclick=()=>{$('ans').value='';$('wcount').textContent='0';$('result').classList.remove('on');$('ans').focus();updateSubmit()};
+$('clearBtn').onclick=()=>{try{if(curTask)sessionStorage.removeItem('wdraft:'+curTask.id)}catch(e){}$('ans').value='';$('wcount').textContent='0';$('result').classList.remove('on');$('ans').focus();updateSubmit()};
 $('newBtn').onclick=()=>{
   const pool=TASKS.filter(t=>t.id!==curTask?.id);
   const pick=pool[Math.floor(Math.random()*pool.length)];
@@ -603,6 +646,8 @@ function showResult(r,maxPts){
   $('result').classList.add('on','vin');
   $('result').scrollIntoView({behavior:'smooth',block:'start'});
 }
+
+route(true);   /* tải lại trang đang ở màn làm bài => vẫn ở đúng đề, Back về danh sách */
 </script>
 </body>
 </html>

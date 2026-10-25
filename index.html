@@ -128,6 +128,8 @@ html{scroll-behavior:smooth}
 .ios.on{background:#ff9500}.ios.on::after{transform:translateX(20px)}
 #fbLoad{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;background:var(--bg)}
 #fbLoad.on{display:flex}
+#topbar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--yl);box-shadow:0 0 10px var(--yl);z-index:100001;opacity:0;pointer-events:none;transition:width .25s ease,opacity .3s ease}
+
 #fbLoad b{display:grid;place-items:center;box-sizing:border-box;width:88px;height:88px;border-radius:26px 26px 9px 9px;border:9px solid var(--yl);color:var(--yl);font:700 44px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;animation:lspin 1.1s cubic-bezier(.65,0,.35,1) infinite}
 @keyframes lspin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#fbLoad b{animation:none}}
@@ -221,6 +223,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 </head>
 <body>
 <div id="fbLoad" class="on" role="status" aria-label="Đang tải"><b>D</b></div>
+<div id="topbar"></div>
 <div id="toast"></div>
 <div id="fbGate"><div class="gw">
 <div class="gc"><h2>Đăng nhập</h2><p id="fbGateMsg" class="gm"></p>
@@ -539,7 +542,22 @@ mkBar('bar1',A,()=>segs[idx]||[0,1],()=>replay());
 mkBar('bar2',R,()=>[0,R.duration||.01],()=>{clearInterval(timer);R.paused?R.play():R.pause()});
 /* navigation */
 const V=['vCourses','vHome','vMode','vType','vRead','vAdd','vEdit','vBk','vAcc'];
-function show(v){V.forEach(i=>$(i).classList.toggle('hide',i!==v));{const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin')}A.pause();R.pause();clearInterval(timer);
+/* ===== Thanh vàng chạy trên cùng khi chuyển mục (giống YouTube) ===== */
+var TopBar=(function(){const el=document.getElementById('topbar');let t1=0,t2=0,w=0;
+  const busy=()=>{const l=document.getElementById('fbLoad');return !!(l&&l.classList.contains('on'))};
+  function start(){if(!el)return;clearTimeout(t2);clearInterval(t1);el.style.transition='none';el.style.width='0';el.style.opacity='1';void el.offsetWidth;
+    el.style.transition='width .25s ease,opacity .3s ease';w=14;el.style.width=w+'%';t1=setInterval(()=>{w+=(92-w)*.12;el.style.width=w+'%'},180)}
+  function done(){if(!el)return;clearInterval(t1);el.style.width='100%';t2=setTimeout(()=>{el.style.opacity='0';t2=setTimeout(()=>{el.style.transition='none';el.style.width='0'},320)},200)}
+  function pulse(){if(busy())return;start();setTimeout(done,380)}
+  return{start,done,pulse}})();
+/* bấm link sang trang khác => thanh chạy tới khi trang mới tải xong */
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');
+  if(!a||e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||a.target==='_blank'||a.hasAttribute('download'))return;
+  let u;try{u=new URL(a.href,location.href)}catch(er){return}
+  if(u.origin===location.origin&&u.pathname!==location.pathname)TopBar.start()});
+window.addEventListener('pageshow',e=>{if(e.persisted)TopBar.done()});
+
+function show(v){window.TopBar&&TopBar.pulse();V.forEach(i=>$(i).classList.toggle('hide',i!==v));{const el=$(v);el.classList.remove('vin');void el.offsetWidth;el.classList.add('vin')}A.pause();R.pause();clearInterval(timer);
   $('nHome').classList.toggle('act',v!=='vAdd'&&v!=='vBk'&&v!=='vAcc');$('nAdd').classList.toggle('act',v==='vAdd');$('nBk').classList.toggle('act',v==='vBk');$('nAcc').classList.toggle('act',v==='vAcc');scrollTo(0,0);
   try{if(!fromPop){const L=LVL(v),c=(history.state&&history.state.in)||0;
     if(L>c){for(let k=c+1;k<=L;k++)history.pushState({in:k},'')}
@@ -560,7 +578,7 @@ $('nHome').onclick=()=>{collapseAll();show('vCourses')};document.querySelector('
 $('ccListen').onclick=()=>{render();show('vHome')};
 let toastT=0;function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),2200)}
 document.querySelectorAll('.cc.soon').forEach(b=>b.onclick=()=>toast('„'+b.dataset.soon+'“ kommt bald!'));
-{const w=document.getElementById('ccWrite');if(w)w.onclick=()=>{location.href='writing.html'}}/* rời trang Bài học sang Thêm bài / Sao lưu => thu gọn hết, quay lại chỉ thấy tên đầu mục */
+{const w=document.getElementById('ccWrite');if(w)w.onclick=()=>{window.TopBar&&TopBar.start();location.href='writing.html'}}/* rời trang Bài học sang Thêm bài / Sao lưu => thu gọn hết, quay lại chỉ thấy tên đầu mục */
 const collapseAll=()=>{openB.clear();subOff.clear();for(const k in subSel)delete subSel[k]};
 $('nAdd').onclick=()=>{collapseAll();show('vAdd')};$('nBk').onclick=()=>{collapseAll();renderBk();show('vBk')};
 /* giao diện sáng/tối: nhớ lựa chọn trong localStorage (khoá 'diktatTheme'); script ở <head> đã áp dụng sẵn khi tải trang */
