@@ -157,6 +157,9 @@ a.um-o{text-decoration:none;box-sizing:border-box}
 .hmeta{color:var(--mu);font-size:14px;margin-bottom:10px}
 .hb .corrections{margin-top:12px}
 .hb .score-grid{margin:14px 0}
+.hq{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin:10px 0;line-height:1.6}
+.hq.ok{border-color:#158f4a}.hq.bad{border-color:var(--bad)}
+.hq .a{margin-top:4px;font-size:15px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
@@ -179,10 +182,12 @@ a.um-o{text-decoration:none;box-sizing:border-box}
 <main>
   <div class="th"><h1>Lịch sử bài làm</h1></div>
   <div class="hsk" id="hTab" role="tablist">
+    <button type="button" data-s="read" role="tab" aria-selected="false">Lesen</button>
     <button type="button" class="on" data-s="write" role="tab" aria-selected="true">Schreiben</button>
     <button type="button" data-s="speak" role="tab" aria-selected="false">Sprechen</button>
   </div>
 
+  <div class="col w2 hide" id="hRead"></div>
   <div class="col w2" id="hWrite"></div>
   <div class="col w2 hide" id="hSpeak"><div class="card" style="max-width:none">🎤 <b>Intensives Sprechen</b> – sắp ra mắt. Khi có bài Sprechen, lịch sử bài nói sẽ hiện ở đây.</div></div>
 </main>
@@ -298,10 +303,15 @@ function bodyHTML(e){
 function entryHTML(e){
   return `<div class="acc hh${openH.has(e.id)?' open':''}" data-id="${esc(e.id)}"><div class="ah" role="button" tabindex="0"><span class="nm"><b>${esc(e.title)}</b><small>${esc(e.level||'A1')} · ${esc(e.type||'')} · ${fdate(e.at)}</small></span><span class="sc">${f2(e.score)} / ${f2(e.max)}</span><span class="ch">⌄</span></div><div class="abw"><div class="ab"><div class="hb">${bodyHTML(e)}</div></div></div></div>`;
 }
+function readEntryHTML(e){
+  const rows=(e.items||[]).map((x,i)=>`<div class="hq ${x.ok?'ok':'bad'}"><b>${i+1}.</b> ${esc(x.q)}<div class="a">${x.ok?'<span style="color:#158f4a;font-weight:600">✓ Đúng</span>':'<span style="color:var(--bad);font-weight:600">✗ Sai</span>'} – Bạn chọn/viết: <b>${esc(x.given||'(chưa trả lời)')}</b>${x.ok?'':' · Đáp án: <b>'+esc(x.answer)+'</b>'}</div>${x.erkl?`<div class="a" style="color:var(--mu)">💡 ${esc(x.erkl)}</div>`:''}</div>`).join('');
+  return `<div class="acc hh${openH.has(e.id)?' open':''}" data-id="${esc(e.id)}"><div class="ah" role="button" tabindex="0"><span class="nm"><b>${esc(e.title)}</b><small>${esc(e.level||'A1')} · Teil ${+e.teil||''} · ${fdate(e.at)}</small></span><span class="sc">${f2(e.score)} / ${f2(e.max)}</span><span class="ch">⌄</span></div><div class="abw"><div class="ab"><div class="hb">${rows}<div class="row"><button class="sbtn" data-del="${esc(e.id)}">🗑️ Xoá bài này</button></div></div></div></div></div>`;
+}
+const EMPTY=(n,u)=>`<div class="card" style="max-width:none">Chưa có bài làm nào. Hãy làm một bài ở <a href="${u}" style="color:var(--yl)">${n}</a> – bài đã chấm xong sẽ được lưu ở đây.</div>`;
 function draw(){
-  const L=HIST.filter(e=>(e.skill||'write')==='write'),box=$('hWrite');
-  box.innerHTML=L.length?L.map(entryHTML).join('')+'<p style="margin-top:22px"><button class="sbtn" id="hClear">🗑️ Xoá toàn bộ lịch sử</button></p>'
-    :'<div class="card" style="max-width:none">Chưa có bài làm nào. Hãy làm một đề ở <a href="writing.html" style="color:var(--yl)">Intensives Schreiben</a> – bài đã chấm xong sẽ được lưu ở đây.</div>';
+  const W=HIST.filter(e=>(e.skill||'write')==='write'),R=HIST.filter(e=>e.skill==='read');
+  $('hWrite').innerHTML=W.length?W.map(entryHTML).join('')+'<p style="margin-top:22px"><button class="sbtn" data-clear="write">🗑️ Xoá toàn bộ lịch sử Schreiben</button></p>':EMPTY('Intensives Schreiben','writing.html');
+  $('hRead').innerHTML=R.length?R.map(readEntryHTML).join('')+'<p style="margin-top:22px"><button class="sbtn" data-clear="read">🗑️ Xoá toàn bộ lịch sử Lesen</button></p>':EMPTY('Intensives Lesen','reading.html');
 }
 async function onUser(){
   if(started)return;started=true;
@@ -319,22 +329,27 @@ async function delOne(id){
   HIST=HIST.filter(x=>x.id!==id);openH.delete(id);saveLocal();draw();
   try{await HC().doc(id).delete()}catch(er){console.warn('del',er.code||er)}
 }
-async function clearAll(){
-  if(!HIST.length||!confirm('Xoá toàn bộ lịch sử bài làm Schreiben? Không thể khôi phục.'))return;
-  HIST=[];openH.clear();saveLocal();draw();
-  try{for(;;){const snap=await HC().limit(400).get();if(snap.empty)break;const b=firebase.firestore().batch();snap.docs.forEach(d=>b.delete(d.ref));await b.commit()}}
+async function clearAll(skill){
+  const mine=e=>skill==='read'?e.skill==='read':(e.skill||'write')==='write';
+  if(!HIST.some(mine)||!confirm('Xoá toàn bộ lịch sử '+(skill==='read'?'Lesen':'Schreiben')+'? Không thể khôi phục.'))return;
+  HIST=HIST.filter(e=>!mine(e));openH.clear();saveLocal();draw();
+  try{for(;;){
+    const snap=await (skill==='read'?HC().where('skill','==','read'):HC()).limit(400).get();
+    const docs=skill==='read'?snap.docs:snap.docs.filter(d=>(d.data().skill||'write')==='write');
+    if(!docs.length)break;const b=firebase.firestore().batch();docs.forEach(d=>b.delete(d.ref));await b.commit();if(snap.docs.length<400)break}}
   catch(er){console.warn('clear',er.code||er)}
   toast('Đã xoá lịch sử');
 }
-$('hWrite').onclick=e=>{
+const hClick=e=>{
   const d=e.target.closest('[data-del]');if(d){delOne(d.dataset.del);return}
-  if(e.target.closest('#hClear')){clearAll();return}
-  const h=e.target.closest('.ah');if(h){const a=h.parentElement,on=a.classList.toggle('open');on?openH.add(a.dataset.id):openH.delete(a.dataset.id)}};
-$('hWrite').onkeydown=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const h=e.target.closest('.ah');if(!h)return;e.preventDefault();h.click()};
+  const c=e.target.closest('[data-clear]');if(c){clearAll(c.dataset.clear);return}
+  const x=e.target.closest('.ah');if(x){const a=x.parentElement,on=a.classList.toggle('open');on?openH.add(a.dataset.id):openH.delete(a.dataset.id)}};
+const hKey=e=>{if(e.key!=='Enter'&&e.key!==' ')return;const x=e.target.closest('.ah');if(!x)return;e.preventDefault();x.click()};
+['hWrite','hRead'].forEach(i=>{$(i).onclick=hClick;$(i).onkeydown=hKey});
 $('hTab').onclick=e=>{const b=e.target.closest('button[data-s]');if(!b)return;
   TopBar.pulse();
   $('hTab').querySelectorAll('button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',x===b)});
-  $('hWrite').classList.toggle('hide',b.dataset.s!=='write');$('hSpeak').classList.toggle('hide',b.dataset.s!=='speak')};
+  $('hRead').classList.toggle('hide',b.dataset.s!=='read');$('hWrite').classList.toggle('hide',b.dataset.s!=='write');$('hSpeak').classList.toggle('hide',b.dataset.s!=='speak')};
 
 </script>
 </body>
