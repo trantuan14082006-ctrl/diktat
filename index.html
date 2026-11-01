@@ -6,7 +6,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin="anonymous"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <script>/* áp dụng giao diện tối ngay từ đầu (trước khi vẽ trang) để không bị nháy màu sáng */
 try{if(localStorage.getItem('diktatTheme')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}</script>
 <title>Diktat Dashboard</title>
@@ -21,8 +21,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-appl
 .logo{cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--yl);font-weight:700;font-size:22px}
 .logo b{width:40px;height:40px;border-radius:12px 12px 4px 4px;border:4px solid var(--yl);display:grid;place-items:center;font-size:20px}
 nav{display:flex;align-items:center;gap:8px}
-nav a{padding:7px 14px;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:border-color .25s,background-color .25s,transform .15s}
-nav a:hover{border-color:rgba(245,179,1,.45)}nav a:active{transform:scale(.96)}
+nav a{padding:7px 14px;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:border-color .25s,background-color .25s,transform .15s}@media(hover:hover){nav a:hover{border-color:rgba(245,179,1,.45)}}nav a:active{transform:scale(.96)}
 nav a.act{border-color:var(--yl);background:var(--yl2);color:var(--tx);font-weight:600}
 .av{width:44px;height:44px;border-radius:50%;background:var(--gr);color:var(--tx);display:grid;place-items:center;margin-left:14px}
 main{max-width:1480px;margin:0 auto;padding:10px 48px 70px}
@@ -33,11 +32,11 @@ h3{font-size:22px;margin:0 0 18px}
 .col{max-width:690px}.col.w{max-width:640px}
 .acc{margin-bottom:18px}.ah{background:var(--g);border-radius:18px;padding:22px 30px;font-size:24px;display:flex;justify-content:space-between;cursor:pointer;border:1px solid transparent}
 .acc.open .ah{border-color:var(--gr)}.ah span{transition:.2s}.acc.open .ah span{transform:rotate(180deg)}
-.nm{flex:1;font-style:normal}.ed{font-size:18px;font-weight:400;margin:0 18px;color:var(--tx);padding:0 6px}.ed:hover{background:var(--sel);border-radius:6px}
-.abw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.2,.7,.2,1)}.acc.open .abw{grid-template-rows:1fr}.ab{overflow:hidden;min-height:0;visibility:hidden;transition:visibility 0s .38s}.acc.open .ab{visibility:visible;transition-delay:0s}.abi{display:flex;flex-direction:column;gap:12px;padding:14px 6px 2px 0}.srow{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.sub{width:250px;max-width:100%;flex:none;background:var(--g);border-radius:16px;padding:16px 30px;cursor:pointer;border:1px solid transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sub:hover,.sub.on{border-color:var(--gr)}.pl{flex:1;min-width:240px}.pl .pill{max-width:380px;white-space:normal}
+.nm{flex:1;font-style:normal}.ed{font-size:18px;font-weight:400;margin:0 18px;color:var(--tx);padding:0 6px}@media(hover:hover){.ed:hover{background:var(--sel);border-radius:6px}}
+.abw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.2,.7,.2,1)}.acc.open .abw{grid-template-rows:1fr}.ab{overflow:hidden;min-height:0;visibility:hidden;transition:visibility 0s .38s}.acc.open .ab{visibility:visible;transition-delay:0s}.abi{display:flex;flex-direction:column;gap:12px;padding:14px 6px 2px 0}.srow{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.sub{width:250px;max-width:100%;flex:none;background:var(--g);border-radius:16px;padding:16px 30px;cursor:pointer;border:1px solid transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sub.on{border-color:var(--gr)}@media(hover:hover){.sub:hover{border-color:var(--gr)}}.pl{flex:1;min-width:240px}.pl .pill{max-width:380px;white-space:normal}
 .pill,.mode{background:var(--g);border-radius:16px;padding:16px 30px;margin-bottom:12px;cursor:pointer;border:1px solid transparent;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pill small{display:block;color:var(--mu);font-size:12px}
-.mode{max-width:690px;font-size:20px;padding:18px 30px}.pill:hover,.mode:hover{border-color:var(--gr)}
+.mode{max-width:690px;font-size:20px;padding:18px 30px}@media(hover:hover){.pill:hover,.mode:hover{border-color:var(--gr)}}
 .bar{background:var(--g);border-radius:40px;padding:12px 26px;display:flex;align-items:center;gap:14px;position:relative}
 .bar button{background:none;border:0;padding:0;font-size:16px;cursor:pointer;color:var(--tx)}
 .tm{font-size:14px;white-space:nowrap}.tr{flex:1;height:5px;border-radius:3px;background:var(--bd);cursor:pointer;min-width:60px}.tr i{display:block;height:100%;width:0;background:var(--tx);border-radius:3px}
@@ -54,7 +53,7 @@ h3{font-size:22px;margin:0 0 18px}
 .cnt{text-align:right;margin:14px 0}
 .btns{display:flex;justify-content:space-between;gap:20px}
 .btn{border:0;border-radius:12px;padding:17px 0;font:600 16px system-ui,sans-serif;cursor:pointer;width:42%}
-.b1{background:var(--g);color:var(--tx)}.b2{background:var(--gr);color:var(--tx)}
+.b1{background:var(--g);color:var(--tx)}.b3{background:var(--sel);color:var(--tx)}.b2{background:var(--gr);color:var(--tx)}
 .sm{background:var(--g);border:0;border-radius:8px;padding:6px 14px;font:italic 15px system-ui,sans-serif;color:var(--tx);cursor:pointer;margin:0 8px 8px 0}
 .sm.on{background:var(--sel)}.tools{margin-top:18px}
 .rcard{background:var(--bg);box-shadow:var(--sh);border-radius:16px;min-height:300px;margin:18px 0;padding:20px;text-align:center;display:flex;flex-direction:column;justify-content:space-between}
@@ -76,47 +75,54 @@ h3{font-size:22px;margin:0 0 18px}
 .mu{color:var(--mu);font-size:14px}.hide{display:none!important}.big{font-size:34px;font-weight:700}
 @media(max-width:700px){.sub{max-width:100%}main{padding:6px 16px 60px}.hd{padding:10px 16px}.ah{padding:16px 20px;font-size:20px}.btn{width:46%}}
 
-/* hiệu ứng chuyển nhẹ */
+
+.btn,.sm,.sbtn,.mode{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(hover:none){@media(hover:hover){.btn:hover,.sbtn:hover{transform:none;box-shadow:none}}.keyhint{display:none}}
+#relisten2{display:none}
+@media(max-width:700px){
+ #vType .ov textarea{min-height:120px}
+ #vType .btns{position:sticky;bottom:var(--kb,0px);z-index:6;gap:8px;background:var(--bg);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));margin-top:4px;box-shadow:0 -8px 12px -10px rgba(0,0,0,.25)}
+ #vType .btns .btn{width:auto;flex:1;padding:15px 0;min-height:48px}
+ #vType .btns #relisten2{display:block;flex:0 0 30%;background:var(--sel)}
+ #vType #relisten{display:none}
+ #vType .sm{padding:12px 16px;min-height:44px;font-size:16px}
+}
+
+
 @keyframes vin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .vin{animation:vin .35s cubic-bezier(.2,.7,.2,1) both}
-.ah,.pill,.mode,.sbtn,.btn,.sm,.logo b{transition:border-color .2s,background-color .2s,transform .2s,box-shadow .2s}
-.ah:hover,.pill:hover,.mode:hover{transform:translateX(4px)}
-.ah:active,.pill:active,.mode:active,.sbtn:active,.btn:active,.sm:active{transform:scale(.97)}
-.logo:hover b{transform:rotate(-6deg) scale(1.06)}
+.ah,.pill,.mode,.sbtn,.btn,.sm,.logo b{transition:border-color .2s,background-color .2s,transform .2s,box-shadow .2s}@media(hover:hover){.ah:hover,.pill:hover,.mode:hover{transform:translateX(4px)}}
+.ah:active,.pill:active,.mode:active,.sbtn:active,.btn:active,.sm:active{transform:scale(.97)}@media(hover:hover){.logo:hover b{transform:rotate(-6deg) scale(1.06)}}
 .pl.go .pill{animation:vin .35s cubic-bezier(.2,.7,.2,1) both}
 .pl.go .pill:nth-child(2){animation-delay:.04s}.pl.go .pill:nth-child(3){animation-delay:.08s}.pl.go .pill:nth-child(4){animation-delay:.12s}.pl.go .pill:nth-child(5){animation-delay:.16s}.pl.go .pill:nth-child(n+6){animation-delay:.2s}
 .ah span{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
-.sub{transition:border-color .2s,background-color .2s,transform .2s}.sub:hover{transform:translateX(4px)}.sub:active{transform:scale(.97)}
-.btn:hover,.sbtn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12)}
-.btn:active,.sbtn:active{transform:scale(.97);box-shadow:none}
-.ah:hover,.sub:hover,.pill:hover,.mode:hover{box-shadow:0 4px 14px rgba(0,0,0,.07)}
+.sub{transition:border-color .2s,background-color .2s,transform .2s}@media(hover:hover){.sub:hover{transform:translateX(4px)}}.sub:active{transform:scale(.97)}@media(hover:hover){.btn:hover,.sbtn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12)}}
+.btn:active,.sbtn:active{transform:scale(.97);box-shadow:none}@media(hover:hover){.ah:hover,.sub:hover,.pill:hover,.mode:hover{box-shadow:0 4px 14px rgba(0,0,0,.07)}}
 :focus-visible{outline:2px solid var(--gr);outline-offset:2px;border-radius:8px}
 html{scroll-behavior:smooth}
 @media(prefers-reduced-motion:reduce){.vin,.pl.go .pill{animation:none}*{transition:none!important;scroll-behavior:auto!important}}
-/* chữ các nút luôn màu đen */
+
 .sm,.sm.on,.b1,.ed,.nav2 button,.tl .l button,.sbtn,.btn{color:#14181f!important}
 .bkb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.bkb input[type=text]{flex:1;min-width:160px;width:auto!important}
 .bkl{max-height:50vh;overflow:auto;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:6px 10px;margin-bottom:12px}
 .card label.bkh,.card label.bki{display:flex;gap:10px;align-items:center;margin:0;padding:6px 4px;border-radius:8px;cursor:pointer;color:var(--tx);font-size:15px}
-.card label.bkh{font-weight:700;margin-top:6px}.card label.bki{padding-left:30px}.card label.bkh:hover,.card label.bki:hover{background:var(--g)}
+.card label.bkh{font-weight:700;margin-top:6px}.card label.bki{padding-left:30px}@media(hover:hover){.card label.bkh:hover,.card label.bki:hover{background:var(--g)}}
 .bki .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bkh .mu,.bki .mu{margin-left:auto;white-space:nowrap;font-weight:400}
 .wv{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;max-height:260px;overflow:auto;white-space:pre-wrap;font:13px/1.5 ui-monospace,Consolas,monospace;margin:10px 0}
-/* ===== Nút bật/tắt giao diện tối ===== */
-.tg{width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);background:var(--g);color:var(--tx);font-size:19px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;margin-left:6px;transition:border-color .2s,background-color .2s,transform .2s}
-.tg:hover{border-color:var(--yl);transform:rotate(-12deg) scale(1.06)}.tg:active{transform:scale(.92)}
-/* ===== Giao diện tối: chỉ đổi bộ biến màu, các thành phần còn lại tự theo ===== */
+
+.tg{width:42px;height:42px;border-radius:50%;border:2px solid var(--bd);background:var(--g);color:var(--tx);font-size:19px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;margin-left:6px;transition:border-color .2s,background-color .2s,transform .2s}@media(hover:hover){.tg:hover{border-color:var(--yl);transform:rotate(-12deg) scale(1.06)}}.tg:active{transform:scale(.92)}
+
 :root[data-theme=dark]{color-scheme:dark;
 --bg:#16181d;--g:#22262d;--gr:#d4a017;--tx:#e8eaee;--mu:#98a1ad;--bd:#383e48;--sel:#4a3d12;--bad:#ff8272;--sh:0 2px 12px rgba(0,0,0,.55);--yl:#e0ac1a;--yl2:#3a3110}
 :root[data-theme=dark] .ov .bd .g{color:#4fd18c}
 :root[data-theme=dark] .rcard{border:1px solid var(--bd)}
 :root[data-theme=dark] .box{border-color:var(--bd)}
-/* các nút vốn ép chữ đen (cho nền sáng) => trên nền tối đổi sang chữ sáng; nút vàng vẫn giữ chữ đen */
+
 :root[data-theme=dark] .sm,:root[data-theme=dark] .sm.on,:root[data-theme=dark] .b1,:root[data-theme=dark] .ed,:root[data-theme=dark] .nav2 button,:root[data-theme=dark] .tl .l button,:root[data-theme=dark] .sbtn,:root[data-theme=dark] .btn{color:var(--tx)!important}
 :root[data-theme=dark] .b2,:root[data-theme=dark] .sbtn.p{color:#14181f!important}
-/* ===== Firebase Auth UI ===== */
+
 .fb-bar{display:flex;align-items:center;gap:6px;margin-left:8px}
-.fb-btn{border:2px solid var(--bd);border-radius:8px;padding:5px 12px;background:var(--g);color:var(--tx);font:600 13px system-ui;cursor:pointer;white-space:nowrap;transition:border-color .2s,transform .2s}
-.fb-btn:hover{border-color:var(--yl);transform:translateY(-1px)}.fb-btn:active{transform:scale(.96)}
+.fb-btn{border:2px solid var(--bd);border-radius:8px;padding:5px 12px;background:var(--g);color:var(--tx);font:600 13px system-ui;cursor:pointer;white-space:nowrap;transition:border-color .2s,transform .2s}@media(hover:hover){.fb-btn:hover{border-color:var(--yl);transform:translateY(-1px)}}.fb-btn:active{transform:scale(.96)}
 .fb-st{font-size:12px;color:var(--mu);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:700px){.fb-bar{margin-left:0}.fb-st{max-width:120px}}
 .fast{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 4px;padding:12px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--g)}
@@ -134,17 +140,14 @@ html{scroll-behavior:smooth}
 @keyframes lspin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){#fbLoad b{animation:none}}
 .um{position:relative}
-.um-av{width:40px;height:40px;border-radius:50%;border:0;background:var(--yl);color:#14181f;font:700 15px system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0;transition:transform .15s,box-shadow .2s}
-.um-av:hover{transform:scale(1.06)}.um-av:focus-visible{outline:3px solid var(--yl2)}
+.um-av{width:40px;height:40px;border-radius:50%;border:0;background:var(--yl);color:#14181f;font:700 15px system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0;transition:transform .15s,box-shadow .2s}@media(hover:hover){.um-av:hover{transform:scale(1.06)}}.um-av:focus-visible{outline:3px solid var(--yl2)}
 .um-pop{position:absolute;right:0;top:calc(100% + 12px);min-width:300px;max-width:92vw;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px 0;z-index:300}
 .um-n{padding:14px 20px 6px;font-weight:700;font-size:16px;overflow-wrap:anywhere}
 .um-s{white-space:nowrap;padding:6px 20px 14px;color:var(--mu);font-size:13px;border-bottom:1px dashed var(--bd)}
-.um-o{display:block;width:100%;text-align:left;padding:13px 20px;border:0;background:none;color:var(--tx);font:16px system-ui,sans-serif;cursor:pointer}
-.um-o:hover{background:var(--g)}
+.um-o{display:block;width:100%;text-align:left;padding:13px 20px;border:0;background:none;color:var(--tx);font:16px system-ui,sans-serif;cursor:pointer}@media(hover:hover){.um-o:hover{background:var(--g)}}
 a.um-o{text-decoration:none;box-sizing:border-box}
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:36px;max-width:1180px;margin-top:8px}
-.cc{position:relative;display:block;width:100%;height:290px;border:0;border-radius:28px;padding:34px 38px;text-align:left;overflow:hidden;cursor:pointer;color:#fff;font-family:inherit;box-shadow:0 10px 30px rgba(0,0,0,.13);transition:transform .25s,box-shadow .25s}
-.cc:hover{transform:translateY(-5px);box-shadow:0 16px 38px rgba(0,0,0,.2)}.cc:active{transform:scale(.99)}
+.cc{position:relative;display:block;width:100%;height:290px;border:0;border-radius:28px;padding:34px 38px;text-align:left;overflow:hidden;cursor:pointer;color:#fff;font-family:inherit;box-shadow:0 10px 30px rgba(0,0,0,.13);transition:transform .25s,box-shadow .25s}@media(hover:hover){.cc:hover{transform:translateY(-5px);box-shadow:0 16px 38px rgba(0,0,0,.2)}}.cc:active{transform:scale(.99)}
 .cc:focus-visible{outline:4px solid var(--yl)}
 .cc h2{position:absolute;z-index:2;left:38px;top:34px;right:38px;margin:0;font-size:30px;line-height:1.2;font-weight:700;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.12)}
 .cc .chip{position:absolute;z-index:2;left:38px;bottom:34px;padding:16px 28px;border-radius:14px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:18px;line-height:1.7;color:#fff}
@@ -191,8 +194,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 #fbGate .gc{flex:0 1 460px;background:#fcfcfc;border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.14);padding:46px 40px 50px;text-align:center;box-sizing:border-box}
 #fbGate h2{margin:0 0 22px;font-size:32px;color:#14181f}
 #fbGate .gm{margin:0 0 8px;min-height:24px;color:#c0341d;font-size:15px}
-#fbGate .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 18px;border:1.5px solid #d6a000;border-radius:12px;background:#fff;color:#14181f;font:600 17px system-ui,sans-serif;cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s}
-#fbGate .gbtn:hover{background:#fff6d6;box-shadow:0 4px 14px rgba(245,179,1,.35)}#fbGate .gbtn:active{transform:scale(.98)}
+#fbGate .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 18px;border:1.5px solid #d6a000;border-radius:12px;background:#fff;color:#14181f;font:600 17px system-ui,sans-serif;cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s}@media(hover:hover){#fbGate .gbtn:hover{background:#fff6d6;box-shadow:0 4px 14px rgba(245,179,1,.35)}}#fbGate .gbtn:active{transform:scale(.98)}
 #fbGate .gbtn.hide{display:none}
 #fbGate #fbForm{text-align:left}
 #fbGate #fbForm label{display:block;margin:12px 0 6px;font-size:15px;font-weight:600;color:#14181f}
@@ -200,8 +202,7 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 #fbGate #fbForm input:focus{border-color:#f5b301;box-shadow:0 0 0 3px rgba(245,179,1,.25)}
 #fbGate .pw{position:relative}#fbGate .pw input{padding-right:46px}
 #fbGate .pw button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:18px;cursor:pointer;padding:8px;color:#5b6470}
-#fbGate #fbLoginBtn{display:block;width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;background:#f5b301;color:#14181f;font:700 17px system-ui,sans-serif;cursor:pointer;transition:background .2s,transform .15s}
-#fbGate #fbLoginBtn:hover{background:#e5a800}#fbGate #fbLoginBtn:active{transform:scale(.98)}#fbGate #fbLoginBtn:disabled{opacity:.6;cursor:default}
+#fbGate #fbLoginBtn{display:block;width:100%;margin-top:20px;padding:14px;border:0;border-radius:12px;background:#f5b301;color:#14181f;font:700 17px system-ui,sans-serif;cursor:pointer;transition:background .2s,transform .15s}@media(hover:hover){#fbGate #fbLoginBtn:hover{background:#e5a800}}#fbGate #fbLoginBtn:active{transform:scale(.98)}#fbGate #fbLoginBtn:disabled{opacity:.6;cursor:default}
 #fbGate .or{display:flex;align-items:center;gap:12px;margin:20px 0 16px;color:#8a919b;font-size:14px}
 #fbGate .or::before,#fbGate .or::after{content:"";flex:1;height:1px;background:#d9dcd6}
 #fbGate .gr{flex:1 1 520px;display:flex;flex-direction:column;align-items:center;gap:30px;min-width:0}
@@ -225,6 +226,22 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
 .rdi input[type=text],.rdi textarea,.rdi select{margin-top:8px}
 .rdi textarea{min-height:70px}
 .rdh{display:flex;justify-content:space-between;align-items:center}
+
+/* ===== tối ưu điện thoại cho học viên ===== */
+a,button,.ah,.pill,.mode,.opt,.btn,.sm,.sbtn,.tg,.um-av{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body #toast{bottom:calc(34px + var(--kb,0px) + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 32px);text-align:center}
+.mobtog{display:none}
+@media(max-width:700px){
+ .sm,.sbtn{min-height:44px}
+ .nav2{gap:18px}.nav2 button{min-width:56px;min-height:56px;font-size:26px}
+ .tl .l button{width:40px;height:40px;font-size:15px}
+ .hsk{gap:8px;flex-wrap:nowrap}.hsk button{flex:1;padding:12px 6px!important;font-size:15px!important}.hsk button.on{padding:11px 5px!important}
+ .opts .opt{flex:1 1 100%;padding:14px}
+ .mobtog{display:inline-block}#taskDesc.hid2{display:none}
+ body.typing .stk{position:sticky;bottom:var(--kb,0px);z-index:6;background:var(--bg);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 12px -10px rgba(0,0,0,.25)}
+ .stk .cnt{margin:2px 0 8px}.stk .btns{gap:10px;margin-top:0!important}.stk .btn{width:auto;flex:1;padding:14px 0;min-height:48px}
+}
 </style>
 </head>
 <body>
@@ -310,10 +327,10 @@ background:linear-gradient(100deg,#f5b301 0%,#f9cf55 28%,#fdeeb8 48%,#fff 66%)}
  <div id="pmain">
   <div class="box"><div class="ov"><div class="bd" id="bd"></div><textarea id="ans" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Schreibe, was du hörst"></textarea></div></div>
   <div class="cnt" id="cnt"></div><div class="mu" id="lmsg" style="margin:4px 0 8px;min-height:20px"></div>
-  <div class="btns"><button class="btn b1" id="chk">Prüfen</button><button class="btn b2" id="skip">Weiter</button></div>
+  <div class="btns"><button class="btn b3" id="relisten2">🔊 Nghe lại</button><button class="btn b1" id="chk">Prüfen</button><button class="btn b2" id="skip">Weiter</button></div>
   <div class="tools"><button class="sm" data-c="ä">ä</button><button class="sm" data-c="ö">ö</button><button class="sm" data-c="ü">ü</button><button class="sm" data-c="ß">ß</button><button class="sm" data-c="Ä">Ä</button><button class="sm" data-c="Ö">Ö</button><button class="sm" data-c="Ü">Ü</button><br>
   <button class="sm" id="relisten">🔊 Nghe lại</button><button class="sm" id="cs">Phân biệt hoa/thường: không</button><button class="sm on" id="pn">Bỏ qua dấu câu: có</button>
-  <div class="mu">Enter = kiểm tra · Ctrl = nghe lại câu</div></div>
+  <div class="mu keyhint">Enter = kiểm tra · Ctrl = nghe lại câu</div></div>
  </div>
  <div id="pdone" class="hide"><div class="big" id="sc"></div><p class="mu" id="scd">Sätze beim ersten Versuch richtig.</p><button class="btn b2" id="again">Nochmal</button></div>
  <div class="row"><button class="sbtn" id="pback">← Zurück</button></div></div>
@@ -544,7 +561,7 @@ async function detect(blob,N,ls){
   return b.slice(1).map((e,i)=>[+b[i].toFixed(2),+e.toFixed(2)]);
 }
 /* audio + custom bars */
-function playRange(s,e,el=A){clearInterval(timer);el.currentTime=s;el.playbackRate=rate;el.play();timer=setInterval(()=>{if(el.currentTime>=e){el.pause();clearInterval(timer)}},25)}
+function playRange(s,e,el=A){clearInterval(timer);if(el.readyState>=1)el.currentTime=s;else el.addEventListener('loadedmetadata',()=>{el.currentTime=s},{once:true});el.playbackRate=rate;const pr=el.play();if(pr&&pr.catch)pr.catch(()=>{});timer=setInterval(()=>{if(el.currentTime>=e){el.pause();clearInterval(timer)}},25);return pr}
 function setAudio(blob){if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);A.src=R.src=url}
 const bars=[],SP=[.25,.5,.75,1,1.25,1.5,1.75,2];
 const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
@@ -1288,11 +1305,14 @@ function go(i){idx=i;tries=0;force=null;greenTok=[];setStale(false);$('ans').rea
   $('ans').focus();listenUI();replay()}
 function listenUI(){const h=Math.min(heard[idx]||0,LISTEN_NEED);
   $('cnt').textContent=`${idx+1}/${lines.length} · Đã nghe ${h}/${LISTEN_NEED}`+(h>=LISTEN_NEED?' ✓':'');
-  const b=$('relisten');if(b)b.textContent=`🔊 Nghe lại (${h}/${LISTEN_NEED})`}
+  ['relisten','relisten2'].forEach(id=>{const b=$(id);if(b)b.textContent=`🔊 Nghe lại (${h}/${LISTEN_NEED})`})}
 function listenOk(){const h=heard[idx]||0;
   if(h>=LISTEN_NEED){$('lmsg').textContent='';return true}
-  $('lmsg').textContent='';return false}
-function replay(){const s=segs[idx];if(s){heard[idx]=(heard[idx]||0)+1;$('lmsg').textContent='';listenUI();playRange(s[0],s[1])}}
+  $('lmsg').textContent=`Nghe đủ ${LISTEN_NEED} lần mới sang câu sau (còn ${LISTEN_NEED-h} lần). Bấm "🔊 Nghe lại", hoặc viết đúng rồi bấm Prüfen.`;return false}
+function replay(){const s=segs[idx],i=idx;if(!s)return;
+  const ok=()=>{heard[i]=(heard[i]||0)+1;if(i===idx){$('lmsg').textContent='';listenUI()}};
+  const pr=playRange(s[0],s[1]);
+  if(pr&&pr.then)pr.then(ok,()=>{$('lmsg').textContent='Trình duyệt chặn tự phát âm thanh – bấm "🔊 Nghe lại" để nghe.'});else ok()}
 function target(i){let t=lines[i];if(pnOn)t=t.replace(/[.,;:!?„“"”»«()\-–—…]/g,'');return t.replace(/\s+/g,' ').trim()}
 const eq=(a,b)=>csOn?a===b:a.toLowerCase()===b.toLowerCase();
 let greenTok=[],stale=false,lastInput='';function setStale(v){stale=v;const t=$('ans');if(t)t.classList.toggle('st',v)} /* từng từ của lần Check gần nhất: true = đúng (xanh) */
@@ -1327,13 +1347,17 @@ function check(){const ta=$('ans'),raw=stale?lastInput:ta.value,u=cleanAns(raw);
   const t=target(idx);
   /* viết đúng rồi -> sang câu sau luôn, không cần nghe đủ 5 lần; chỉ khi chưa đúng mới bắt nghe đủ 5 lần */
   tries++;
-  if(eq(t,u)){if(tries===1)good++;force='ok';ta.value=lines[idx];ta.readOnly=true;paint();setTimeout(()=>go(idx+1),700)}
+  if(eq(t,u)){if(tries===1)good++;force='ok';ta.value=lines[idx];paint();setTimeout(()=>go(idx+1),700)}
   else{force=null;lastInput=raw;ta.value=mask(t,u);const p=ta.value.indexOf('*');paint();ta.focus();if(p>=0)ta.setSelectionRange(p,p);setStale(true)}}
 $('ans').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();return}
   if(stale&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!['Control','Shift','Alt','Meta','Tab'].includes(e.key))clearWrong();
   /* đang hiện đáp án (đỏ): gõ phím nào thì xoá đáp án đi để gõ lại từ đầu */
   if(force==='no'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!['Control','Shift','Alt','Meta','Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)){$('ans').value='';force=null;paint()}});
 /* gõ đè lên dấu * : mỗi ký tự gõ vào sẽ thay đúng 1 dấu * ngay sau con trỏ */
+$('ans').addEventListener('beforeinput',e=>{
+  if(force==='ok'){e.preventDefault();return}
+  /* bàn phím điện thoại: nút Enter -> kiểm tra (keydown trên Android thường là 'Unidentified') */
+  if(e.inputType==='insertLineBreak'||e.inputType==='insertParagraph'){e.preventDefault();check()}});
 $('ans').addEventListener('input',e=>{const ta=$('ans'),p=ta.selectionStart;
   if(e.inputType==='insertText'&&ta.value[p]==='*'){ta.value=ta.value.slice(0,p)+ta.value.slice(p+1);ta.setSelectionRange(p,p)}
   force=null;paint()});
@@ -1342,7 +1366,13 @@ function clearWrong(){if(!stale||force)return;setStale(false);const ta=$('ans');
 $('ans').addEventListener('click',clearWrong);$('ans').addEventListener('focus',clearWrong);
 $('ans').addEventListener('scroll',()=>{$('bd').scrollTop=$('ans').scrollTop});
 document.addEventListener('keydown',e=>{if(e.key==='Control'&&!e.repeat&&!$('vType').classList.contains('hide')&&idx<lines.length){e.preventDefault();replay()}});
-$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};$('relisten').onclick=()=>{replay();$('ans').focus()};
+$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};
+$('relisten').onclick=$('relisten2').onclick=()=>{replay();$('ans').focus()};
+['chk','skip','relisten','relisten2'].forEach(id=>$(id).addEventListener('mousedown',e=>e.preventDefault()));
+/* thanh nút luôn nằm ngay trên bàn phím (iOS không tự co layout) */
+(function(){const vv=window.visualViewport;if(!vv)return;
+  const set=()=>document.documentElement.style.setProperty('--kb',Math.max(0,Math.round(innerHeight-vv.height-vv.offsetTop))+'px');
+  vv.addEventListener('resize',set);vv.addEventListener('scroll',set);set()})();
 $('cs').onclick=e=>{csOn=!csOn;e.target.classList.toggle('on',csOn);e.target.textContent='Phân biệt hoa/thường: '+(csOn?'có':'không');paint()};
 $('pn').onclick=e=>{pnOn=!pnOn;e.target.classList.toggle('on',pnOn);e.target.textContent='Bỏ qua dấu câu: '+(pnOn?'có':'không');paint()};
 $('again').onclick=startPractice;$('pback').onclick=()=>show('vMode');
