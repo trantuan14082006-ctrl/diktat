@@ -167,6 +167,13 @@ body #toast{bottom:calc(34px + var(--kb,0px) + env(safe-area-inset-bottom,0px));
  body.typing .stk{position:sticky;bottom:var(--kb,0px);z-index:6;background:var(--bg);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 12px -10px rgba(0,0,0,.25)}
  .stk .cnt{margin:2px 0 8px}.stk .btns{gap:10px;margin-top:0!important}.stk .btn{width:auto;flex:1;padding:14px 0;min-height:48px}
 }
+
+/* menu avatar trên điện thoại: bung ra full chiều ngang, ngay dưới header */
+@media(max-width:700px){
+ .hd{position:relative}.fb-bar,.um{position:static}
+ .um-pop{position:absolute;left:16px;right:16px;top:calc(100% - 2px);min-width:0;max-width:none;width:auto;box-sizing:border-box}
+ .um-s{white-space:normal}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin="anonymous"></script>

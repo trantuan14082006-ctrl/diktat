@@ -79,6 +79,7 @@ h3{font-size:22px;margin:0 0 18px}
 .btn,.sm,.sbtn,.mode{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 @media(hover:none){@media(hover:hover){.btn:hover,.sbtn:hover{transform:none;box-shadow:none}}.keyhint{display:none}}
 #relisten2{display:none}
+@media(min-width:701px){#vType #chk{width:100%}}
 @media(max-width:700px){
  #vType .ov textarea{min-height:120px}
  #vType .btns{position:sticky;bottom:var(--kb,0px);z-index:6;gap:8px;background:var(--bg);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));margin-top:4px;box-shadow:0 -8px 12px -10px rgba(0,0,0,.25)}
@@ -242,6 +243,13 @@ body #toast{bottom:calc(34px + var(--kb,0px) + env(safe-area-inset-bottom,0px));
  body.typing .stk{position:sticky;bottom:var(--kb,0px);z-index:6;background:var(--bg);padding:6px 0 calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 12px -10px rgba(0,0,0,.25)}
  .stk .cnt{margin:2px 0 8px}.stk .btns{gap:10px;margin-top:0!important}.stk .btn{width:auto;flex:1;padding:14px 0;min-height:48px}
 }
+
+/* menu avatar trên điện thoại: bung ra full chiều ngang, ngay dưới header */
+@media(max-width:700px){
+ .hd{position:relative}.fb-bar,.um{position:static}
+ .um-pop{position:absolute;left:16px;right:16px;top:calc(100% - 2px);min-width:0;max-width:none;width:auto;box-sizing:border-box}
+ .um-s{white-space:normal}
+}
 </style>
 </head>
 <body>
@@ -327,10 +335,10 @@ body #toast{bottom:calc(34px + var(--kb,0px) + env(safe-area-inset-bottom,0px));
  <div id="pmain">
   <div class="box"><div class="ov"><div class="bd" id="bd"></div><textarea id="ans" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Schreibe, was du hörst"></textarea></div></div>
   <div class="cnt" id="cnt"></div><div class="mu" id="lmsg" style="margin:4px 0 8px;min-height:20px"></div>
-  <div class="btns"><button class="btn b3" id="relisten2">🔊 Nghe lại</button><button class="btn b1" id="chk">Prüfen</button><button class="btn b2" id="skip">Weiter</button></div>
+  <div class="btns"><button class="btn b3" id="relisten2">🔊 Nghe lại</button><button class="btn b2" id="chk">Weiter</button><button class="btn b2" id="skip" style="display:none">Weiter</button></div>
   <div class="tools"><button class="sm" data-c="ä">ä</button><button class="sm" data-c="ö">ö</button><button class="sm" data-c="ü">ü</button><button class="sm" data-c="ß">ß</button><button class="sm" data-c="Ä">Ä</button><button class="sm" data-c="Ö">Ö</button><button class="sm" data-c="Ü">Ü</button><br>
   <button class="sm" id="relisten">🔊 Nghe lại</button><button class="sm" id="cs">Phân biệt hoa/thường: không</button><button class="sm on" id="pn">Bỏ qua dấu câu: có</button>
-  <div class="mu keyhint">Enter = kiểm tra · Ctrl = nghe lại câu</div></div>
+  <div class="mu keyhint">Enter = Weiter (kiểm tra &amp; sang câu) · Ctrl = nghe lại câu</div></div>
  </div>
  <div id="pdone" class="hide"><div class="big" id="sc"></div><p class="mu" id="scd">Sätze beim ersten Versuch richtig.</p><button class="btn b2" id="again">Nochmal</button></div>
  <div class="row"><button class="sbtn" id="pback">← Zurück</button></div></div>
@@ -1308,7 +1316,7 @@ function listenUI(){const h=Math.min(heard[idx]||0,LISTEN_NEED);
   ['relisten','relisten2'].forEach(id=>{const b=$(id);if(b)b.textContent=`🔊 Nghe lại (${h}/${LISTEN_NEED})`})}
 function listenOk(){const h=heard[idx]||0;
   if(h>=LISTEN_NEED){$('lmsg').textContent='';return true}
-  $('lmsg').textContent=`Nghe đủ ${LISTEN_NEED} lần mới sang câu sau (còn ${LISTEN_NEED-h} lần). Bấm "🔊 Nghe lại", hoặc viết đúng rồi bấm Prüfen.`;return false}
+  $('lmsg').textContent=`Nghe đủ ${LISTEN_NEED} lần mới sang câu sau (còn ${LISTEN_NEED-h} lần). Bấm "🔊 Nghe lại", hoặc gõ đúng rồi bấm Weiter.`;return false}
 function replay(){const s=segs[idx],i=idx;if(!s)return;
   const ok=()=>{heard[i]=(heard[i]||0)+1;if(i===idx){$('lmsg').textContent='';listenUI()}};
   const pr=playRange(s[0],s[1]);
@@ -1349,7 +1357,7 @@ function check(){const ta=$('ans'),raw=stale?lastInput:ta.value,u=cleanAns(raw);
   tries++;
   if(eq(t,u)){if(tries===1)good++;force='ok';ta.value=lines[idx];paint();setTimeout(()=>go(idx+1),700)}
   else{force=null;lastInput=raw;ta.value=mask(t,u);const p=ta.value.indexOf('*');paint();ta.focus();if(p>=0)ta.setSelectionRange(p,p);setStale(true)}}
-$('ans').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();check();return}
+$('ans').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nextAct();return}
   if(stale&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!['Control','Shift','Alt','Meta','Tab'].includes(e.key))clearWrong();
   /* đang hiện đáp án (đỏ): gõ phím nào thì xoá đáp án đi để gõ lại từ đầu */
   if(force==='no'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!['Control','Shift','Alt','Meta','Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)){$('ans').value='';force=null;paint()}});
@@ -1357,7 +1365,7 @@ $('ans').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();c
 $('ans').addEventListener('beforeinput',e=>{
   if(force==='ok'){e.preventDefault();return}
   /* bàn phím điện thoại: nút Enter -> kiểm tra (keydown trên Android thường là 'Unidentified') */
-  if(e.inputType==='insertLineBreak'||e.inputType==='insertParagraph'){e.preventDefault();check()}});
+  if(e.inputType==='insertLineBreak'||e.inputType==='insertParagraph'){e.preventDefault();nextAct()}});
 $('ans').addEventListener('input',e=>{const ta=$('ans'),p=ta.selectionStart;
   if(e.inputType==='insertText'&&ta.value[p]==='*'){ta.value=ta.value.slice(0,p)+ta.value.slice(p+1);ta.setSelectionRange(p,p)}
   force=null;paint()});
@@ -1366,7 +1374,12 @@ function clearWrong(){if(!stale||force)return;setStale(false);const ta=$('ans');
 $('ans').addEventListener('click',clearWrong);$('ans').addEventListener('focus',clearWrong);
 $('ans').addEventListener('scroll',()=>{$('bd').scrollTop=$('ans').scrollTop});
 document.addEventListener('keydown',e=>{if(e.key==='Control'&&!e.repeat&&!$('vType').classList.contains('hide')&&idx<lines.length){e.preventDefault();replay()}});
-$('chk').onclick=check;$('skip').onclick=()=>{if(listenOk())go(idx+1)};
+/* 1 nút Weiter: ô trống hoặc đang hiện lỗi chưa sửa -> sang câu sau (cần nghe đủ 5 lần); còn lại -> kiểm tra, đúng thì tự sang câu */
+function nextAct(){if(idx>=lines.length||force==='ok')return;
+  const raw=stale?lastInput:$('ans').value;
+  if(stale||!cleanAns(raw)){if(listenOk())go(idx+1);return}
+  check()}
+$('chk').onclick=nextAct;$('skip').onclick=nextAct;
 $('relisten').onclick=$('relisten2').onclick=()=>{replay();$('ans').focus()};
 ['chk','skip','relisten','relisten2'].forEach(id=>$(id).addEventListener('mousedown',e=>e.preventDefault()));
 /* thanh nút luôn nằm ngay trên bàn phím (iOS không tự co layout) */
